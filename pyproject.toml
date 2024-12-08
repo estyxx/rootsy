@@ -1,0 +1,15 @@
+[project]
+name = "rootsy"
+version = "0.1.0"
+description = "A pythonic GEDCOM file parser"
+authors = [{ name = "Ester Beltrami", email = "beltrami.ester@gmail.com" }]
+
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+]

@@ -1,0 +1,23 @@
+
+repos:
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.19.0
+    hooks:
+    -   id: pyupgrade
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.2
+    hooks:
+      - id: ruff # Run `ruff` linter
+        name: Check 'ruff linter' passes
+        stages: [pre-commit, pre-push]
+        args: [--fix]
+
+      - id: ruff-format # Run `ruff` formatter
+        name: Check 'ruff format' passes
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
