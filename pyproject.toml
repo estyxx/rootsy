@@ -5,8 +5,7 @@ description = "A pythonic GEDCOM file parser"
 authors = [{ name = "Ester Beltrami", email = "beltrami.ester@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
-
+dependencies = ["attrs>=24.2.0"]
 
 [dependency-groups]
 dev = ["pytest>=8.3.4"]

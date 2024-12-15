@@ -1,7 +1,8 @@
 import datetime
-from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any
+
+from attrs import field, frozen
 
 
 class EventType(Enum):
@@ -14,7 +15,7 @@ class EventType(Enum):
     BAPTISM = auto()
 
 
-@dataclass
+@frozen(slots=True, kw_only=True)
 class Event:
     """Represents an event related to an individual or family."""
 
@@ -24,7 +25,7 @@ class Event:
     additional_details: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@frozen(slots=True, kw_only=True)
 class Individual:
     """Represents an individual (INDI tag) extracted from a GEDCOM file.
 
@@ -41,7 +42,7 @@ class Individual:
     spouse_families: list[str] = field(default_factory=list)
 
 
-@dataclass
+@frozen(slots=True, kw_only=True)
 class Family:
     """Represents a family record extracted from GEDCOM files.
 
