@@ -1,10 +1,10 @@
 import pytest
 
-from rootsy.parser import GedcomParser
 from rootsy.models import EventType
+from rootsy.parser import GedcomParser
 
 
-def test_gedcom_parser_basic_parsing(tmp_path):
+def test_gedcom_parser_basic_parsing(tmp_path: str) -> None:
     # Create a simple GEDCOM test file
     test_gedcom_content = """0 HEAD
 1 GEDC
@@ -29,7 +29,7 @@ def test_gedcom_parser_basic_parsing(tmp_path):
     assert len(parsed_structure.individuals) == 1
     assert len(parsed_structure.families) == 1
 
-    individual = list(parsed_structure.individuals.values())[0]
+    individual = next(iter(parsed_structure.individuals.values()))
     assert individual.name == "John /Doe/"
     assert individual.given_name == "John"
     assert individual.surname == "Doe"
@@ -41,7 +41,7 @@ def test_gedcom_parser_basic_parsing(tmp_path):
     assert birth_event.type == EventType.BIRTH
 
 
-def test_invalid_gedcom_version(tmp_path):
+def test_invalid_gedcom_version(tmp_path: str) -> None:
     # Create a GEDCOM file with unsupported version
     invalid_gedcom_content = """0 HEAD
 1 GEDC

@@ -1,10 +1,12 @@
+import datetime
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
 from enum import Enum, auto
-from datetime import date
+from typing import Any
 
 
 class EventType(Enum):
+    """Enum representing the types of events in a GEDCOM file."""
+
     BIRTH = auto()
     DEATH = auto()
     MARRIAGE = auto()
@@ -14,46 +16,67 @@ class EventType(Enum):
 
 @dataclass
 class Event:
+    """Represents an event related to an individual or family."""
+
     type: EventType
-    date: Optional[date] = None
-    place: Optional[str] = None
-    additional_details: Dict[str, Any] = field(default_factory=dict)
+    date: datetime.date | None = None
+    place: str | None = None
+    additional_details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class Individual:
+    """Represents an individual (INDI tag) extracted from a GEDCOM file.
+
+    The Individual class is a compilation of facts or hypothesized facts about a person.
+    """
+
     id: str
     name: str
-    given_name: Optional[str] = None
-    surname: Optional[str] = None
-    sex: Optional[str] = None
-    events: List[Event] = field(default_factory=list)
-    parents: List[str] = field(default_factory=list)
-    spouse_families: List[str] = field(default_factory=list)
+    given_name: str | None = None
+    surname: str | None = None
+    sex: str | None = None
+    events: list[Event] = field(default_factory=list)
+    parents: list[str] = field(default_factory=list)
+    spouse_families: list[str] = field(default_factory=list)
 
 
 @dataclass
 class Family:
+    """Represents a family record extracted from GEDCOM files.
+
+    This class models a family structure, including partners (husband and wife),
+    children, and significant events such as marriage and divorce. It supports
+    various family configurations and relationships, reflecting the diversity of
+    human family structures.
+    """
+
     id: str
-    husband: Optional[str] = None
-    wife: Optional[str] = None
-    children: List[str] = field(default_factory=list)
-    marriage_event: Optional[Event] = None
-    divorce_event: Optional[Event] = None
+    husband: str | None = None
+    wife: str | None = None
+    children: list[str] = field(default_factory=list)
+    marriage_event: Event | None = None
+    divorce_event: Event | None = None
 
 
 class GedcomStructure:
-    def __init__(self):
-        self.individuals: Dict[str, Individual] = {}
-        self.families: Dict[str, Family] = {}
+    """A class to represent the structure of a GEDCOM file."""
 
-    def add_individual(self, individual: Individual):
+    def __init__(self) -> None:
+        """Initialize with empty individuals and families dictionaries."""
+        self.individuals: dict[str, Individual] = {}
+        self.families: dict[str, Family] = {}
+
+    def add_individual(self, individual: Individual) -> None:
+        """Add an individual to the GedcomStructure."""
         self.individuals[individual.id] = individual
 
-    def add_family(self, family: Family):
+    def add_family(self, family: Family) -> None:
+        """Add a family to the GedcomStructure."""
         self.families[family.id] = family
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the GedcomStructure to a dictionary."""
         return {
             "individuals": {k: vars(v) for k, v in self.individuals.items()},
             "families": {k: vars(v) for k, v in self.families.items()},

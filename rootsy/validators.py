@@ -2,21 +2,15 @@ from typing import TextIO
 
 
 class GedcomValidationError(Exception):
-    """Custom exception for GEDCOM validation errors"""
+    """Custom exception for GEDCOM validation errors."""
 
-    pass
+    def __init__(self) -> None:
+        message = "Unsupported GEDCOM version. This parser supports version 5.5.1"
+        super().__init__(message)
 
 
 def validate_gedcom_version(file: TextIO) -> None:
-    """
-    Validate GEDCOM file version
-
-    Args:
-        file (TextIO): File object to validate
-
-    Raises:
-        GedcomValidationError: If version is unsupported
-    """
+    """Validate GEDCOM file version."""
     # Reset file pointer to beginning
     file.seek(0)
 
@@ -36,6 +30,4 @@ def validate_gedcom_version(file: TextIO) -> None:
             break
 
     if not version_found:
-        raise GedcomValidationError(
-            "Unsupported GEDCOM version. This parser supports version 5.5.1"
-        )
+        raise GedcomValidationError

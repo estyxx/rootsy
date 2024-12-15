@@ -1,22 +1,17 @@
-from typing import TextIO, Generator, Tuple
+from collections.abc import Generator
+from pathlib import Path
+from typing import TextIO
 
-from .models import GedcomStructure, Individual, Family, Event, EventType
+from .models import Event, EventType, Family, GedcomStructure, Individual
 from .validators import validate_gedcom_version
 
 
 class GedcomParser:
     @classmethod
     def parse(cls, file_path: str) -> GedcomStructure:
-        """
-        Primary parsing method for GEDCOM files
-
-        Args:
-            file_path (str): Path to the GEDCOM file
-
-        Returns:
-            GedcomStructure: Parsed genealogical data
-        """
-        with open(file_path, encoding="utf-8") as gedcom_file:
+        """Primary parsing method for GEDCOM files."""
+        with Path(file_path).open(encoding="utf-8") as gedcom_file:
+            breakpoint()
             # First, validate the GEDCOM version
             validate_gedcom_version(gedcom_file)
 
@@ -44,13 +39,19 @@ class GedcomParser:
                 # Individual-level parsing
                 if current_individual:
                     current_individual = cls._parse_individual_record(
-                        current_individual, level, tag, value
+                        current_individual,
+                        level,
+                        tag,
+                        value,
                     )
 
                 # Family-level parsing
                 if current_family:
                     current_family = cls._parse_family_record(
-                        current_family, level, tag, value
+                        current_family,
+                        level,
+                        tag,
+                        value,
                     )
 
             # Add final individual and family
@@ -62,18 +63,10 @@ class GedcomParser:
             return structure
 
     @staticmethod
-    def _parse_lines(file: TextIO) -> Generator[Tuple[int, str, str], None, None]:
-        """
-        Generator to parse GEDCOM file lines
-
-        Args:
-            file (TextIO): File object to parse
-
-        Yields:
-            Tuple[int, str, str]: Level, tag, and value for each line
-        """
-        for line in file:
-            line = line.strip()
+    def _parse_lines(file: TextIO) -> Generator[tuple[int, str, str]]:
+        """Parse GEDCOM file lines."""
+        for line_ in file:
+            line = line_.strip()
             parts = line.split(maxsplit=2)
 
             # Handle varying GEDCOM line formats
@@ -88,11 +81,12 @@ class GedcomParser:
 
     @staticmethod
     def _parse_individual_record(
-        individual: Individual, level: int, tag: str, value: str
+        individual: Individual,
+        level: int,
+        tag: str,
+        value: str,
     ) -> Individual:
-        """
-        Parse individual-specific records
-        """
+        """Parse individual-specific records."""
         if tag == "NAME":
             individual.name = value
             # Advanced name parsing
@@ -119,11 +113,12 @@ class GedcomParser:
 
     @staticmethod
     def _parse_family_record(
-        family: Family, level: int, tag: str, value: str
+        family: Family,
+        level: int,
+        tag: str,
+        value: str,
     ) -> Family:
-        """
-        Parse family-specific records
-        """
+        """Parse family-specific records."""
         if tag == "HUSB":
             family.husband = value
         elif tag == "WIFE":
