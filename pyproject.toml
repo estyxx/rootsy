@@ -12,13 +12,24 @@ dev = ["pytest>=8.3.4"]
 
 [tool.ruff]
 target-version = "py313"
+line-length = 88
 
 [tool.ruff.lint]
 select = ["ALL"]
 fixable = ["ALL"]
 ignore = [
     # pragma: alphabetize
+    "C901", # Function too complex
     "D1", # Missing docstring in {}
+    "DTZ001", # `datetime.datetime()` called without a `tzinfo` argument
+    "DTZ007", # Naive datetime constructed using `datetime.datetime.strptime()` without %z
+    "PLR0912", # Too many branches
     "S101", # Use of `assert` detected
+
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = [
+    "F401", # `foo` imported but unused
 
 ]

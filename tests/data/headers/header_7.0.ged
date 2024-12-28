@@ -1,0 +1,66 @@
+0 HEAD
+1 SOUR MyGenealogySoftware
+2 NAME My Family History Software
+2 VERS 1.0
+2 CORP MyGenealogyCompany
+3 ADDR 123 Genealogy St., Springfield, IL 62701, USA
+3 PHON +1-800-555-1234
+3 EMAIL support@mygenealogysoftware.com
+3 WWW https://www.mygenealogysoftware.com
+1 DATE 22 DEC 2024
+1 CHAR UTF-8
+1 GEDC
+2 VERS 7.0
+2 FORM JSON-LD
+1 LANG English
+1 FILE myfamily.ged
+1 NOTE GEDCOM 7.0 demonstration file.
+0 @U1@ SUBM
+1 NAME John Doe
+1 ADDR 456 Family Ln., Anytown, TX 75001, USA
+1 PHON +1-800-555-6789
+1 EMAIL john.doe@example.com
+0 @I1@ INDI
+1 NAME Jane /Smith/
+1 SEX F
+1 BIRT
+2 DATE 15 MAR 1985
+2 PLAC London, Greater London, England, United Kingdom
+3 MAP
+4 LATI 51.5074
+4 LONG -0.1278
+1 DEAT
+2 DATE 20 JUN 2050
+2 PLAC New York, NY, USA
+1 FAMC @F1@
+0 @I2@ INDI
+1 NAME John /Smith/
+1 SEX M
+1 BIRT
+2 DATE 20 MAY 1983
+1 FAMS @F1@
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I1@
+1 MARR
+2 DATE 15 JUN 2010
+1 CHIL @I3@
+0 @I3@ INDI
+1 NAME Emily /Smith/
+1 SEX F
+1 BIRT
+2 DATE 10 APR 2012
+2 PLAC Springfield, IL, USA
+0 @S1@ SOUR
+1 TITL Birth Certificate of Jane Smith
+1 AUTH Registrar of Births
+1 PUBL
+2 DATE 16 MAR 1985
+2 PLAC London, UK
+1 REPO @R1@
+0 @R1@ REPO
+1 NAME National Archives
+1 ADDR Archives Rd., London, UK
+1 PHON +44-20-1234-5678
+1 WWW https://nationalarchives.gov.uk
+0 TRLR

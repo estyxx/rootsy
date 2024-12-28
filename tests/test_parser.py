@@ -1,7 +1,7 @@
 import pytest
 
-from rootsy.models import EventType
-from rootsy.parser import GedcomParser
+from rootsy.models import EventType, UnsupportedGedcomVersionError
+from rootsy.parser import parse_gedcom
 
 
 def test_gedcom_parser_basic_parsing(tmp_path: str) -> None:
@@ -23,7 +23,7 @@ def test_gedcom_parser_basic_parsing(tmp_path: str) -> None:
     test_file.write_text(test_gedcom_content)
 
     # Parse the file
-    parsed_structure = GedcomParser.parse(str(test_file))
+    parsed_structure = parse_gedcom(str(test_file))
 
     # Assertions
     assert len(parsed_structure.individuals) == 1
@@ -53,5 +53,5 @@ def test_invalid_gedcom_version(tmp_path: str) -> None:
     test_file.write_text(invalid_gedcom_content)
 
     # Ensure validation fails
-    with pytest.raises(Exception):
-        GedcomParser.parse(str(test_file))
+    with pytest.raises(UnsupportedGedcomVersionError):
+        parse_gedcom(str(test_file))

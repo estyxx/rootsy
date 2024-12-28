@@ -1,129 +1,30 @@
-from collections.abc import Generator
+from __future__ import annotations
+
 from pathlib import Path
-from typing import TextIO
+from typing import Any
 
-from .models import Event, EventType, Family, GedcomStructure, Individual
-from .validators import validate_gedcom_version
+from rootsy.models import GedcomStructure
+from rootsy.reader import GedcomReader
+from rootsy.registry import get_parser_for_tag
+from rootsy.types import ParsingContext
 
 
-class GedcomParser:
-    @classmethod
-    def parse(cls, file_path: str) -> GedcomStructure:
-        """Primary parsing method for GEDCOM files."""
-        with Path(file_path).open(encoding="utf-8") as gedcom_file:
-            breakpoint()
-            # First, validate the GEDCOM version
-            validate_gedcom_version(gedcom_file)
+def parse_gedcom(file_path: Path | str) -> dict[str, Any]:
+    """Parse a complete GEDCOM file."""
+    reader = GedcomReader(Path(file_path))
+    structure = None
 
-            # Reset file pointer
-            gedcom_file.seek(0)
+    for line_group in reader.line_groups():
+        first_line = line_group[0]
 
-            # Create structure to hold parsed data
-            structure = GedcomStructure()
+        parser = get_parser_for_tag(first_line.tag)
 
-            # Process file line by line
-            current_individual = None
-            current_family = None
+        result, line_ = parser.parse(line_group, ParsingContext())
 
-            for level, tag, value in cls._parse_lines(gedcom_file):
-                # Top-level parsing logic
-                if tag == "INDI":
-                    if current_individual:
-                        structure.add_individual(current_individual)
-                    current_individual = Individual(id=value, name="")
-                elif tag == "FAM":
-                    if current_family:
-                        structure.add_family(current_family)
-                    current_family = Family(id=value)
-
-                # Individual-level parsing
-                if current_individual:
-                    current_individual = cls._parse_individual_record(
-                        current_individual,
-                        level,
-                        tag,
-                        value,
-                    )
-
-                # Family-level parsing
-                if current_family:
-                    current_family = cls._parse_family_record(
-                        current_family,
-                        level,
-                        tag,
-                        value,
-                    )
-
-            # Add final individual and family
-            if current_individual:
-                structure.add_individual(current_individual)
-            if current_family:
-                structure.add_family(current_family)
-
-            return structure
-
-    @staticmethod
-    def _parse_lines(file: TextIO) -> Generator[tuple[int, str, str]]:
-        """Parse GEDCOM file lines."""
-        for line_ in file:
-            line = line_.strip()
-            parts = line.split(maxsplit=2)
-
-            # Handle varying GEDCOM line formats
-            if len(parts) < 2:
-                continue
-
-            level = int(parts[0])
-            tag = parts[1].upper()
-            value = parts[2] if len(parts) > 2 else ""
-
-            yield level, tag, value
-
-    @staticmethod
-    def _parse_individual_record(
-        individual: Individual,
-        level: int,
-        tag: str,
-        value: str,
-    ) -> Individual:
-        """Parse individual-specific records."""
-        if tag == "NAME":
-            individual.name = value
-            # Advanced name parsing
-            name_parts = value.split("/")
-            if len(name_parts) > 1:
-                individual.given_name = name_parts[0].strip()
-                individual.surname = name_parts[1].strip()
-
-        elif tag == "SEX":
-            individual.sex = value
-
-        # Event parsing (simplified)
-        event_mapping = {
-            "BIRT": EventType.BIRTH,
-            "DEAT": EventType.DEATH,
-            "BAPM": EventType.BAPTISM,
-        }
-
-        if tag in event_mapping:
-            event = Event(type=event_mapping[tag])
-            individual.events.append(event)
-
-        return individual
-
-    @staticmethod
-    def _parse_family_record(
-        family: Family,
-        level: int,
-        tag: str,
-        value: str,
-    ) -> Family:
-        """Parse family-specific records."""
-        if tag == "HUSB":
-            family.husband = value
-        elif tag == "WIFE":
-            family.wife = value
-        elif tag == "CHIL":
-            family.children.append(value)
-
-        return family
+        match first_line.tag:
+            case "HEAD":
+                structure = GedcomStructure(header=result)
+            case "INDI":
+                structure.add_individual(result)
+            case "FAM":
+                structure.add_family(result)

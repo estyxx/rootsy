@@ -6,7 +6,7 @@ Rootsy is a modern Python package for parsing GEDCOM files. GEDCOM is a standard
 
 - Parse GEDCOM files into Python objects
 - Navigate and manipulate genealogical data
-- Support for GEDCOM 5.5 and 5.5.1 standards
+- Support for GEDCOM 7.0 and 5.5.1 standards
 
 ## Installation
 
@@ -25,8 +25,7 @@ import rootsy
 
 # Load a GEDCOM file
 gedcom_file = 'path/to/your/file.ged'
-parser = rootsy.GedcomParser()
-tree = parser.parse(gedcom_file)
+tree = rootsy.parse_gedcom(gedcom_file)
 
 # Access individuals
 for individual in tree.individuals:
