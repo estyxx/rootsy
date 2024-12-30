@@ -3,7 +3,7 @@ from typing import ClassVar
 import attrs
 
 from rootsy.adapters import GedcomRecord
-from rootsy.models import Event
+from rootsy.models import Event, EventDetail
 
 
 @attrs.frozen(slots=True, kw_only=True)
@@ -22,3 +22,12 @@ class Individual(GedcomRecord):
     parents: list[str] = attrs.field(factory=list)
     email: str | None = None
 
+
+class IndividualEventDetail(EventDetail):
+    """Details of an event for an individual."""
+
+    age: int | None = None
+
+
+class IndividualEventStructure(GedcomRecord):
+    pass

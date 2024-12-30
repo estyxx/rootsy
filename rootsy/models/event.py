@@ -27,3 +27,14 @@ class Event(GedcomRecord):
     date: datetime.date | None = None
     place: str | None = None
     additional_details: dict[str, Any] = attrs.field(factory=dict)
+
+
+@attrs.frozen(slots=True, kw_only=True)
+class EventDetail(GedcomRecord):
+    """Details of an event."""
+
+    tag: ClassVar[str] = "EVEN"
+
+    type: EventType
+    date: datetime.date | None = None
+    place: str | None = None
