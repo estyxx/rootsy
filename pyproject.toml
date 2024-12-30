@@ -25,6 +25,11 @@ ignore = [
     "DTZ007", # Naive datetime constructed using `datetime.datetime.strptime()` without %z
     "PLR0912", # Too many branches
     "S101", # Use of `assert` detected
+    "D203", # 1 blank line required before class docstring
+    "D212", # Multi-line docstring summary should start at the second line
+    "COM812", # Missing trailing comma. Removed due to formatter redundancy.
+    "ISC001",
+    # single-line-implicit-string-concatenation.  Excluding due to ruff issues.
 
 ]
 
