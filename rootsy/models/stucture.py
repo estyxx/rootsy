@@ -1,3 +1,6 @@
+import datetime
+from typing import Any
+
 import attrs
 
 from rootsy.models import Family, Header, Individual
@@ -18,3 +21,12 @@ class GedcomStructure:
     def add_family(self, family: Family) -> None:
         """Add a family to the GedcomStructure."""
         self.families[family.id] = family
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the GedcomStructure to a dictionary."""
+        return attrs.asdict(
+            self,
+            value_serializer=lambda _, __, value: value.isoformat()
+            if isinstance(value, datetime.datetime)
+            else value,
+        )
