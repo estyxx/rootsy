@@ -15,7 +15,9 @@ class FamilyParser(GedcomParser[Family]):
         context: ParsingContext,
     ) -> tuple[Family, int]:
         """Parse record from GEDCOM lines."""
-        data: dict[str, Any] = {}
+        data: dict[str, Any] = {
+            "children": [],
+        }
         lines_consumed = 0
 
         # Process each line
@@ -33,6 +35,14 @@ class FamilyParser(GedcomParser[Family]):
 
             match line.tag:
                 case "FAM":
-                    data["id"] = line.xref_id
+                    data["id"] = line.xref
+                case "HUSB":
+                    data["husband"] = line.value
+                case "WIFE":
+                    data["wife"] = line.value
+                case "CHIL":
+                    data["children"].append(line.value)
+
+            i += 1
 
         return Family(**data), lines_consumed
