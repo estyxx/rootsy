@@ -1,45 +1,144 @@
 # Rootsy
 
-Rootsy is a modern Python package for parsing GEDCOM files. GEDCOM is a standard file format for genealogical data, and Rootsy makes it easy to work with this data in Python.
+A pythonic, fully typed GEDCOM parser.
 
-## Features
+Rootsy reads a `.ged` file and gives you immutable, well-typed Python objects
+for every individual, family and supporting record, plus a one-call export to
+plain JSON for use in web apps and other tools.
 
-- Parse GEDCOM files into Python objects
-- Navigate and manipulate genealogical data
-- Support for GEDCOM 7.0 and 5.5.1 standards
+It exists because the Python GEDCOM parsers available when this project
+started were either unmaintained, untyped, or stopped at "give me the raw tag
+tree". Rootsy models the GEDCOM specification itself: fields are named after
+what the spec says they mean, structures are parsed by dedicated parsers, and
+nothing is stringly typed at the boundary.
 
-## Installation
+## Status
 
-You can install Rootsy using pip:
+Early, and honest about it. Parses `HEAD`, `INDI` and `FAM` from GEDCOM 5.5.1
+exports well enough to drive a family-tree website; events, dates and
+GEDCOM 7.0 are in progress. See the roadmap below before relying on it.
 
-```bash
-pip install rootsy
+## Install
+
+Requires Python 3.13+.
+
+```sh
+uv add rootsy          # once published
+# or, from a checkout
+uv sync
 ```
 
 ## Usage
 
-Here's a simple example of how to use Rootsy to parse a GEDCOM file:
-
 ```python
-import rootsy
+from rootsy.parser import parse_gedcom
 
-# Load a GEDCOM file
-gedcom_file = 'path/to/your/file.ged'
-tree = rootsy.parse_gedcom(gedcom_file)
+tree = parse_gedcom("family.ged")
 
-# Access individuals
-for individual in tree.individuals:
-    print(individual.name)
+print(tree.header.version)            # "5.5.1"
+print(len(tree.individuals))          # people, keyed by xref, e.g. "@I12@"
+print(len(tree.families))             # families, keyed by xref, e.g. "@F3@"
+
+person = tree.individuals["@I12@"]
+print(person.given_name, person.surname, person.sex)
+
+family = tree.families["@F3@"]
+print(family.husband, family.wife, family.children)
 ```
 
-## Contributing
+Export to JSON:
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+```python
+import json
+from pathlib import Path
+
+Path("family.json").write_text(json.dumps(tree.to_dict(), indent=2))
+```
+
+The JSON mirrors the models:
+
+```json
+{
+  "header": { "version": "5.5.1", "encoding": "UTF-8", "source": { "system_id": "MYHERITAGE" } },
+  "individuals": {
+    "@I12@": { "id": "@I12@", "given_name": "Ermes", "surname": "Rebecchi", "sex": "M", "families": ["@F3@"] }
+  },
+  "families": {
+    "@F3@": { "id": "@F3@", "husband": "@I12@", "wife": "@I13@", "children": ["@I20@"] }
+  }
+}
+```
+
+## Design
+
+```mermaid
+flowchart LR
+    F[.ged file] --> R[GedcomReader]
+    R -->|"list[GedcomLine] per level-0 record"| P[parse_gedcom]
+    P -->|tag| REG[ParserRegistry]
+    REG --> IP[IndividualParser]
+    REG --> FP[FamilyParser]
+    REG --> HP[HeaderParser]
+    IP & FP & HP --> M[attrs models]
+    M --> S[GedcomStructure]
+    S -->|to_dict| J[JSON]
+```
+
+- **Reader**: streams the file, parses each line into `GedcomLine(level, xref,
+  tag, value)`, and groups lines by level-0 record.
+- **Registry**: discovers every parser class in `rootsy.parsers` and maps a
+  GEDCOM tag to it, so adding a record type means adding one model and one
+  parser, nothing else.
+- **Parsers**: one per record or structure. Each consumes exactly its own
+  lines and delegates nested structures (`ADDR`, events, …) to their parsers.
+- **Models**: `attrs` frozen classes with slots and keyword-only fields.
+  Immutable, hashable, and serialisable with `attrs.asdict`.
+
+## Spec support
+
+| Area | 5.5.1 | 7.0 |
+| --- | --- | --- |
+| Header (`HEAD`, `SOUR`, `CHAR`, `LANG`, `DATE`) | yes | planned |
+| Individuals: names, sex, family links | partial (see roadmap) | planned |
+| Individual events (`BIRT`, `DEAT`, `RESI`, …) | in progress | planned |
+| Families: partners, children | yes | planned |
+| Family events (`MARR`, `DIV`) | in progress | planned |
+| Addresses | yes | planned |
+| Multimedia (`OBJE`) | minimal | planned |
+| Sources, notes, repositories, submitters | no | planned |
+| Qualified/partial dates (`ABT`, `BET … AND …`, `1890`) | in progress | planned |
+| Vendor extension tags (`_UID`, …) | dropped | capture planned |
+
+## Roadmap
+
+1. Proper `GedcomDate` type and shared event parsing; birth/death on
+   individuals, marriage/divorce on families; distinguish `FAMC` (child of)
+   from `FAMS` (partner in).
+2. Never lose data: unknown tags captured on the model, unknown level-0
+   records skipped with a warning instead of crashing.
+3. GEDCOM 7.0 with version detection, validated against the official sample
+   files.
+4. `rootsy export file.ged --out file.json` command-line interface; PyPI
+   release.
+5. Strict mypy and CI.
+
+## Development
+
+```sh
+uv sync
+uv run pytest
+uv run ruff check . --fix && uv run ruff format .
+```
+
+Conventions and architecture notes for contributors (human or otherwise) are
+in `CLAUDE.md`.
+
+## References
+
+- GEDCOM 5.5.1 specification (FamilySearch)
+- GEDCOM 7.0 specification, https://gedcom.io
+- Official GEDCOM 7 sample files, https://gedcom.io/tools/
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-For any questions or suggestions, please open an issue on GitHub.
+MIT
