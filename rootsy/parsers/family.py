@@ -1,13 +1,19 @@
 from collections.abc import Sequence
 from typing import Any, ClassVar
 
+import attrs
+
 from rootsy.adapters import GedcomParser
 from rootsy.models import Family
+from rootsy.parsers.event import EventParser
 from rootsy.types import GedcomLine, ParsingContext
 
 
+@attrs.frozen
 class FamilyParser(GedcomParser[Family]):
-    handles_tag: ClassVar[str] = "FAM"
+    """Parser for the FAM record."""
+
+    handles_tag: ClassVar[str] = Family.tag
 
     def parse(
         self,
@@ -19,6 +25,7 @@ class FamilyParser(GedcomParser[Family]):
             "children": [],
         }
         lines_consumed = 0
+        events = EventParser()
 
         # Process each line
         i = 0
@@ -42,6 +49,12 @@ class FamilyParser(GedcomParser[Family]):
                     data["wife"] = line.value
                 case "CHIL":
                     data["children"].append(line.value)
+                case "MARR" | "DIV":
+                    event, event_lines = events.parse(lines[i:], context)
+                    key = "marriage_event" if line.tag == "MARR" else "divorce_event"
+                    data[key] = event
+                    lines_consumed += event_lines - 1
+                    i += event_lines - 1
 
             i += 1
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 import pytest
 
@@ -68,7 +68,9 @@ class TestHeaderIntegration:
         assert header.version == "5.5.1"
         assert header.encoding == "UTF-8"
         assert header.destination == "AnotherGenealogySoftware"
-        assert header.transmission_date == datetime(2024, 12, 22, 0, 0)
+        assert header.transmission_date is not None
+        assert header.transmission_date.raw == "22 DEC 2024"
+        assert header.transmission_date.to_date() == datetime.date(2024, 12, 22)
         assert header.copyright is None
         assert header.source
         assert header.source.system_id == "MyGenealogySoftware"

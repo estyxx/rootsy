@@ -15,8 +15,9 @@ nothing is stringly typed at the boundary.
 ## Status
 
 Early, and honest about it. Parses `HEAD`, `INDI` and `FAM` from GEDCOM 5.5.1
-exports well enough to drive a family-tree website; events, dates and
-GEDCOM 7.0 are in progress. See the roadmap below before relying on it.
+exports well enough to drive a family-tree website, including events, dates and
+family links; the other level-0 records and GEDCOM 7.0 are still to come. See
+the roadmap below before relying on it.
 
 ## Install
 
@@ -41,9 +42,17 @@ print(len(tree.families))             # families, keyed by xref, e.g. "@F3@"
 
 person = tree.individuals["@I12@"]
 print(person.given_name, person.surname, person.sex)
+print(person.child_of_families)       # FAMC: families they are a child of
+print(person.spouse_in_families)      # FAMS: families they are a partner in
+
+birth = person.birth                  # None when the record has no BIRT
+print(birth.date.raw)                 # "ABT 1890", as written in the file
+print(birth.date.year)                # 1890
+print(birth.date.to_date())           # None: only exact dates convert
 
 family = tree.families["@F3@"]
 print(family.husband, family.wife, family.children)
+print(family.marriage_event.date)     # "14 JUN 1919"
 ```
 
 Export to JSON:
@@ -61,10 +70,17 @@ The JSON mirrors the models:
 {
   "header": { "version": "5.5.1", "encoding": "UTF-8", "source": { "system_id": "MYHERITAGE" } },
   "individuals": {
-    "@I12@": { "id": "@I12@", "given_name": "Ermes", "surname": "Rebecchi", "sex": "M", "families": ["@F3@"] }
+    "@I12@": {
+      "id": "@I12@", "given_name": "Ermes", "surname": "Rebecchi", "sex": "M",
+      "events": [{ "type": "BIRT", "date": "ABT 1890", "place": "Verona" }],
+      "child_of_families": [], "spouse_in_families": ["@F3@"]
+    }
   },
   "families": {
-    "@F3@": { "id": "@F3@", "husband": "@I12@", "wife": "@I13@", "children": ["@I20@"] }
+    "@F3@": {
+      "id": "@F3@", "husband": "@I12@", "wife": "@I13@", "children": ["@I20@"],
+      "marriage_event": { "type": "MARR", "date": "14 JUN 1919" }
+    }
   }
 }
 ```
@@ -99,28 +115,26 @@ flowchart LR
 | Area | 5.5.1 | 7.0 |
 | --- | --- | --- |
 | Header (`HEAD`, `SOUR`, `CHAR`, `LANG`, `DATE`) | yes | planned |
-| Individuals: names, sex, family links | partial (see roadmap) | planned |
-| Individual events (`BIRT`, `DEAT`, `RESI`, …) | in progress | planned |
+| Individuals: names, sex, family links | yes | planned |
+| Individual events (`BIRT`, `DEAT`, `RESI`) | yes | planned |
 | Families: partners, children | yes | planned |
-| Family events (`MARR`, `DIV`) | in progress | planned |
+| Family events (`MARR`, `DIV`) | yes | planned |
 | Addresses | yes | planned |
 | Multimedia (`OBJE`) | minimal | planned |
 | Sources, notes, repositories, submitters | no | planned |
-| Qualified/partial dates (`ABT`, `BET … AND …`, `1890`) | in progress | planned |
-| Vendor extension tags (`_UID`, …) | dropped | capture planned |
+| Qualified/partial dates (`ABT`, `BET … AND …`, `1890`) | yes | planned |
+| Source citations on events | kept as raw lines | planned |
+| Vendor extension tags (`_UID`, …) | kept on events | capture planned |
 
 ## Roadmap
 
-1. Proper `GedcomDate` type and shared event parsing; birth/death on
-   individuals, marriage/divorce on families; distinguish `FAMC` (child of)
-   from `FAMS` (partner in).
-2. Never lose data: unknown tags captured on the model, unknown level-0
+1. Never lose data: unknown tags captured on every model, unknown level-0
    records skipped with a warning instead of crashing.
-3. GEDCOM 7.0 with version detection, validated against the official sample
+2. GEDCOM 7.0 with version detection, validated against the official sample
    files.
-4. `rootsy export file.ged --out file.json` command-line interface; PyPI
+3. `rootsy export file.ged --out file.json` command-line interface; PyPI
    release.
-5. Strict mypy and CI.
+4. Strict mypy and CI.
 
 ## Development
 

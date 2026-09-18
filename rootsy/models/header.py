@@ -1,10 +1,12 @@
-import datetime
 from typing import ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomRecord
-from rootsy.models import Address
+from rootsy.models.address import Address
+from rootsy.models.date import GedcomDate
+
+SUPPORTED_VERSIONS = ("5.5.1", "7.0")
 
 
 class UnsupportedGedcomVersionError(ValueError):
@@ -28,7 +30,7 @@ class HeaderSource(GedcomRecord):
     name: str | None = None
     corporation: str | None = None
     data_name: str | None = None
-    data_date: datetime.date | None = None
+    data_date: GedcomDate | None = None
     data_copyright: str | None = None
     address: Address | None = None
 
@@ -41,14 +43,13 @@ class Header(GedcomRecord):
     encoding: str = "UTF-8"
     source: HeaderSource | None = None
     destination: str | None = None
-    transmission_date: datetime.date | None = None
+    transmission_date: GedcomDate | None = None
     language: str | None = None
     copyright: str | None = None
 
     def validate_version(self, __: str, value: str) -> None:
         """Validate if this is a supported version."""
-        major_minor = value.split(".")[:2]
-        if major_minor not in (["5", "5"], ["7", "0"]):
+        if value not in SUPPORTED_VERSIONS:
             raise UnsupportedGedcomVersionError(value)
 
     version: str = attrs.field(validator=validate_version)

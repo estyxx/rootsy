@@ -64,9 +64,9 @@ stores the resulting model in `GedcomStructure`.
   `attrs.field(factory=list)`. Never use mutable defaults.
 - Dates are not `datetime`. GEDCOM dates carry qualifiers (`ABT`, `BEF`,
   `AFT`, `BET … AND …`, `EST`, `CAL`), calendars, and partial precision
-  (`1890`, `MAR 1890`). Model them as a dedicated `GedcomDate` type with the
-  original string preserved; only offer a `datetime`/`date` conversion when the
-  value is exact.
+  (`1890`, `MAR 1890`). Use `GedcomDate` (`rootsy/models/date.py`): it keeps
+  the original string in `raw`, never raises on input it cannot read, and
+  `to_date()` returns a `datetime.date` only when the value is an exact day.
 - Cross-references (`@I1@`) stay as strings on models. Resolution happens on
   `GedcomStructure`, not inside records.
 
@@ -153,30 +153,25 @@ Example: "In this PR we parse birth and death events on individuals, so the tree
 
 ## Known gaps (as of September 2026)
 
-- `IndividualParser`: `BIRT`, `DEAT`, `RESI`, `FAMS` are ignored; `FAMC` is
-  stored in `families`; `parents` is never populated; `name` keeps the raw
-  slashed string.
-- `FamilyParser`: `MARR`, `DIV` and their events are ignored.
 - `parse_gedcom` calls `.parse` on the registry result without checking for
   `None`, so any unhandled level-0 tag raises `AttributeError`.
-- `HeaderParser.parse_date` uses `strptime("%d %b %Y")`, which rejects
-  qualified or partial GEDCOM dates.
+- Only `Event` has an `unparsed` field; every other model still drops the tags
+  it does not know.
+- `EventParser` keeps `SOUR` citations as raw lines; there is no citation
+  model yet. `1 MARR Y` parses as an event, but the `Y` itself is dropped.
 - `HeaderSourceParser` registers `SOUR`, so top-level source records are
   mis-parsed as the header's source.
 - No CLI, no `[build-system]` in `pyproject.toml`, no mypy, no CI.
 
 ## Roadmap (in order)
 
-1. `GedcomDate` type and a shared event-detail parser; wire `BIRT`/`DEAT`
-   into `Individual` and `MARR`/`DIV` into `Family`; capture `FAMS`/`FAMC`
-   correctly; expose `given_name`/`surname` always.
-2. Make `parse_gedcom` resilient: registry miss → warning + skip; add
+1. Make `parse_gedcom` resilient: registry miss → warning + skip; add
    `unparsed` capture on every model.
-3. Version detection and GEDCOM 7.0 support with the official sample files as
+2. Version detection and GEDCOM 7.0 support with the official sample files as
    conformance tests.
-4. `rootsy export file.ged --out file.json` CLI (Typer or argparse) and a
+3. `rootsy export file.ged --out file.json` CLI (Typer or argparse) and a
    `[build-system]` so the package installs cleanly; publish to PyPI.
-5. mypy strict, GitHub Actions CI (ruff, mypy, pytest on 3.13).
+4. mypy strict, GitHub Actions CI (ruff, mypy, pytest on 3.13).
 
 When adding support for a new tag, work spec-first: find it in the
 specification, add the field to the model, add the `case` to the parser, add a

@@ -1,0 +1,48 @@
+0 HEAD
+1 SOUR Rootsy
+2 VERS 0.1.0
+2 NAME Rootsy sample writer
+2 CORP Rootsy
+1 DEST ANY
+1 DATE 22 DEC 2024
+1 FILE sample_5.5.1.ged
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+1 LANG Italian
+0 @I1@ INDI
+1 NAME Giovanni /Rossi/
+1 SEX M
+1 BIRT
+2 DATE ABT 1890
+2 PLAC Verona, Veneto, Italia
+1 DEAT
+2 DATE 3 FEB 1954
+2 PLAC Verona, Veneto, Italia
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Maria /Bianchi/
+2 GIVN Maria
+2 SURN Bianchi
+1 SEX F
+1 BIRT
+2 DATE MAR 1893
+2 PLAC Padova, Veneto, Italia
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Luigi /Rossi/
+1 SEX M
+1 BIRT
+2 DATE 12 JUL 1920
+2 PLAC Verona, Veneto, Italia
+2 NOTE Registered three days later.
+1 FAMC @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+1 MARR
+2 DATE 14 JUN 1919
+2 PLAC Verona, Veneto, Italia
+0 TRLR
