@@ -1,22 +1,12 @@
 from collections.abc import Sequence
-from datetime import datetime
 from typing import Any, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomParser
-from rootsy.models import Header, HeaderSource
+from rootsy.models import GedcomDate, Header, HeaderSource
 from rootsy.registry import get_parser_for_tag
 from rootsy.types import GedcomLine, ParsingContext
-
-
-def parse_date(date_str: str) -> datetime:
-    """Parse a DATE value into a datetime object."""
-    try:
-        return datetime.strptime(date_str, "%d %b %Y")
-    except ValueError as e:
-        msg = f"Invalid date format: {date_str}"
-        raise ValueError(msg) from e
 
 
 @attrs.frozen
@@ -71,7 +61,7 @@ class HeaderParser(GedcomParser[Header]):
                 case "DEST":
                     data["destination"] = line.value
                 case "DATE":
-                    data["transmission_date"] = parse_date(line.value)
+                    data["transmission_date"] = GedcomDate.from_string(line.value)
                 case "COPR":
                     data["copyright"] = line.value
 

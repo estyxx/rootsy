@@ -8,7 +8,7 @@ requires-python = ">=3.13"
 dependencies = ["attrs>=24.2.0"]
 
 [dependency-groups]
-dev = ["pytest>=8.3.4"]
+dev = ["pytest>=8.3.4", "ruff>=0.8.2,<0.9"]
 
 [tool.ruff]
 target-version = "py313"
@@ -26,7 +26,9 @@ ignore = [
     "PLR0912", # Too many branches
     "S101", # Use of `assert` detected
     "D203", # 1 blank line required before class docstring
-    "D212", # Multi-line docstring summary should start at the second line
+    # D212/D213 are mutually exclusive; this codebase puts the summary on the
+    # first line, which is what D212 asks for, so only D213 can be kept.
+    "D213", # Multi-line docstring summary should start at the second line
     "COM812", # Missing trailing comma. Removed due to formatter redundancy.
     "ISC001",
     # single-line-implicit-string-concatenation.  Excluding due to ruff issues.
@@ -36,5 +38,11 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = [
     "F401", # `foo` imported but unused
+
+]
+"tests/**" = [
+    # Tests assert against literal expected values; naming them would only hide
+    # what the assertion says.
+    "PLR2004", # Magic value used in comparison
 
 ]

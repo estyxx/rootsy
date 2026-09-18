@@ -1,9 +1,27 @@
 import datetime
+import enum
 from typing import Any
 
 import attrs
 
-from rootsy.models import Family, Header, Individual
+from rootsy.models.date import GedcomDate
+from rootsy.models.family import Family
+from rootsy.models.header import Header
+from rootsy.models.individual import Individual
+
+
+def _serialise(_: Any, __: Any, value: Any) -> Any:  # noqa: ANN401
+    """Turn the values models hold into something `json.dumps` accepts."""
+    match value:
+        # A GEDCOM date is rarely a calendar date, so JSON keeps it as written.
+        case GedcomDate():
+            return value.raw
+        case enum.Enum():
+            return value.value
+        case datetime.datetime() | datetime.date():
+            return value.isoformat()
+        case _:
+            return value
 
 
 @attrs.define(slots=True, kw_only=True)
@@ -24,9 +42,4 @@ class GedcomStructure:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the GedcomStructure to a dictionary."""
-        return attrs.asdict(
-            self,
-            value_serializer=lambda _, __, value: value.isoformat()
-            if isinstance(value, datetime.datetime)
-            else value,
-        )
+        return attrs.asdict(self, value_serializer=_serialise)

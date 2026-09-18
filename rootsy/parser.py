@@ -21,7 +21,7 @@ def parse_gedcom(file_path: Path | str) -> GedcomStructure:
 
         parser = get_parser_for_tag(first_line.tag)
 
-        result, line_ = parser.parse(line_group, ParsingContext())
+        result, _ = parser.parse(line_group, ParsingContext())
 
         match first_line.tag:
             case "HEAD":

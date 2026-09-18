@@ -54,9 +54,9 @@ class TestAddress:
     def test_complete_address_70(self, parser: AddressParser) -> None:
         """Test parsing a complete address in GEDCOM 7.0 format."""
         lines = [
-            "2 ADR1 123 Genealogy St.",
             # 7.0 uses comma-separated format
             "1 ADDR 123 Genealogy St., Springfield, IL 62701, USA",
+            "2 ADR1 123 Genealogy St.",
             "2 CITY Springfield",
             "2 STAE IL",
             "2 POST 62701",

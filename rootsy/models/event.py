@@ -1,40 +1,35 @@
-import datetime
-from enum import Enum, auto
-from typing import Any, ClassVar
+from enum import Enum
+from typing import ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomRecord
+from rootsy.models.date import GedcomDate
+from rootsy.types import GedcomLine
 
 
 class EventType(Enum):
-    """Enum representing the types of events in a GEDCOM file."""
+    """Type of an event, named by the GEDCOM tag that introduces it."""
 
-    BIRTH = auto()
-    DEATH = auto()
-    MARRIAGE = auto()
-    DIVORCE = auto()
-    BAPTISM = auto()
+    BIRTH = "BIRT"
+    DEATH = "DEAT"
+    MARRIAGE = "MARR"
+    DIVORCE = "DIV"
+    BAPTISM = "BAPM"
+    RESIDENCE = "RESI"
+    OTHER = "EVEN"
 
 
 @attrs.frozen(slots=True, kw_only=True)
 class Event(GedcomRecord):
-    """Comprehensive event representation."""
+    """An event plus the EVENT_DETAIL substructure every event type shares."""
 
     tag: ClassVar[str] = "EVEN"
 
     type: EventType
-    date: datetime.date | None = None
-    place: str | None = None
-    additional_details: dict[str, Any] = attrs.field(factory=dict)
-
-
-@attrs.frozen(slots=True, kw_only=True)
-class EventDetail(GedcomRecord):
-    """Details of an event."""
-
-    tag: ClassVar[str] = "EVEN"
-
-    type: EventType
-    date: datetime.date | None = None
-    place: str | None = None
+    date: GedcomDate | None = None
+    place: str | None = None  # PLAC
+    notes: list[str] = attrs.field(factory=list)  # NOTE, continuations joined
+    # SOUR citations are kept verbatim until there is a citation parser.
+    citations: list[GedcomLine] = attrs.field(factory=list)
+    unparsed: list[GedcomLine] = attrs.field(factory=list)
