@@ -111,6 +111,24 @@ stores the resulting model in `GedcomStructure`.
   files (e.g. the FamilySearch GEDCOM 7 `maximal70.ged` and `minimal70.ged`)
   and a test that parses each without error.
 
+## Commits and pull requests
+
+Keep it short. No walls of text.
+
+### Commits
+
+- Write a summary line, and preferably nothing else.
+- The summary is imperative, capitalised, 70 characters or fewer, with no full stop and no `feat:` or `fix:` prefix. It should complete "If merged, this commit will...". Example: `Show birth and death years on tree nodes`.
+- Add a body only when the reason isn't obvious from the summary. Then one or two short sentences on why, not what.
+
+### Pull request descriptions
+
+- Start with "In this PR" and say what changed and why, in one to three sentences.
+- If there are several distinct changes, add at most three short bullets.
+- No headings, no test plan, no file-by-file list, no filler.
+
+Example: "In this PR we parse birth and death events on individuals, so the tree can show years under each name."
+
 ## GEDCOM notes that matter here
 
 - 5.5.1 and 7.0 differ materially: 7.0 is UTF-8 only, removes `CONC`, changes
