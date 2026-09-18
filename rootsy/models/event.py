@@ -32,4 +32,3 @@ class Event(GedcomRecord):
     notes: list[str] = attrs.field(factory=list)  # NOTE, continuations joined
     # SOUR citations are kept verbatim until there is a citation parser.
     citations: list[GedcomLine] = attrs.field(factory=list)
-    unparsed: list[GedcomLine] = attrs.field(factory=list)

@@ -2,7 +2,10 @@
 
 import datetime
 import json
+import logging
 from pathlib import Path
+
+import pytest
 
 from rootsy.models import EventType
 from rootsy.parser import parse_gedcom
@@ -73,5 +76,57 @@ class TestSample551:
     def test_to_dict_is_plain_json(self, sample_551_file: Path) -> None:
         """Everything a consumer gets must survive `json.dumps` untouched."""
         as_dict = parse_gedcom(sample_551_file).to_dict()
+
+        assert json.loads(json.dumps(as_dict)) == as_dict
+
+
+class TestSample70:
+    """A 7.0 file carries SUBM and REPO records rootsy has no parser for."""
+
+    def test_parses_end_to_end(self, sample_70_file: Path) -> None:
+        structure = parse_gedcom(sample_70_file)
+
+        assert structure.header is not None
+        assert structure.header.version == "7.0"
+        assert sorted(structure.individuals) == ["@I1@", "@I2@", "@I3@"]
+        assert sorted(structure.families) == ["@F1@"]
+
+    def test_the_source_record_is_not_the_headers_source(
+        self,
+        sample_70_file: Path,
+    ) -> None:
+        structure = parse_gedcom(sample_70_file)
+
+        assert structure.header is not None
+        assert structure.header.source is not None
+        assert structure.header.source.system_id == "MyGenealogySoftware"
+        assert structure.sources["@S1@"].title == "Birth Certificate of Jane Smith"
+
+    def test_records_without_a_parser_are_skipped(
+        self,
+        sample_70_file: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        with caplog.at_level(logging.WARNING, logger="rootsy.parser"):
+            parse_gedcom(sample_70_file)
+
+        assert "SUBM" in caplog.text
+        assert "REPO" in caplog.text
+
+    def test_nothing_is_dropped_on_the_way(self, sample_70_file: Path) -> None:
+        """What rootsy cannot place yet is kept on the record it came from."""
+        structure = parse_gedcom(sample_70_file)
+
+        jane = structure.individuals["@I1@"]
+        assert jane.birth is not None
+        assert [line.tag for line in jane.birth.unparsed] == ["MAP", "LATI", "LONG"]
+        assert [line.tag for line in structure.sources["@S1@"].unparsed] == [
+            "DATE",
+            "PLAC",
+            "REPO",
+        ]
+
+    def test_to_dict_is_plain_json(self, sample_70_file: Path) -> None:
+        as_dict = parse_gedcom(sample_70_file).to_dict()
 
         assert json.loads(json.dumps(as_dict)) == as_dict

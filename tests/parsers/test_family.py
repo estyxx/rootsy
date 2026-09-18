@@ -98,3 +98,33 @@ class TestFamily:
         assert family.id == "@F1@"
         assert family.husband is None
         assert lines_consumed == 3
+
+    def test_unknown_tags_are_kept(self, parser: FamilyParser) -> None:
+        """Nothing the spec defines here, or a vendor added, may be dropped."""
+        lines = gedcom_lines(
+            """
+            0 @F1@ FAM
+            1 HUSB @I1@
+            1 NCHI 2
+            1 SLGS
+            2 DATE 14 JUN 1919
+            1 _UID 1234
+            """,
+        )
+
+        family, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert family.husband == "@I1@"
+        assert [line.tag for line in family.unparsed] == [
+            "NCHI",
+            "SLGS",
+            "DATE",
+            "_UID",
+        ]
+        assert lines_consumed == len(lines)
+
+    def test_the_fam_line_itself_is_not_unparsed(self, parser: FamilyParser) -> None:
+        family, _ = parser.parse(gedcom_lines("0 @F1@ FAM"), ParsingContext())
+
+        assert family.id == "@F1@"
+        assert family.unparsed == []

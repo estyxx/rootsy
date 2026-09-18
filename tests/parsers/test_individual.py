@@ -117,13 +117,15 @@ class TestIndividual:
         assert individual.spouse_in_families == ["@F1@", "@F2@"]
         assert individual.child_of_families == ["@F3@"]
 
-    def test_unknown_tags_do_not_break_parsing(self, parser: IndividualParser) -> None:
+    def test_unknown_tags_are_kept(self, parser: IndividualParser) -> None:
+        """Nothing the spec defines here, or a vendor added, may be dropped."""
         lines = gedcom_lines(
             """
             0 @I1@ INDI
             1 NAME Giovanni /Rossi/
             1 _UID 4E2F0B9C
             1 RIN 42
+            1 OCCU Farmer
             1 SEX M
             """,
         )
@@ -131,7 +133,21 @@ class TestIndividual:
         individual, lines_consumed = parser.parse(lines, ParsingContext())
 
         assert individual.sex == "M"
+        assert [line.tag for line in individual.unparsed] == [
+            "_UID",
+            "RIN",
+            "OCCU",
+        ]
         assert lines_consumed == len(lines)
+
+    def test_the_indi_line_itself_is_not_unparsed(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        individual, _ = parser.parse(gedcom_lines("0 @I1@ INDI"), ParsingContext())
+
+        assert individual.id == "@I1@"
+        assert individual.unparsed == []
 
     def test_stops_at_the_next_record(self, parser: IndividualParser) -> None:
         lines = gedcom_lines(

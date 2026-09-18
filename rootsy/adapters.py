@@ -4,15 +4,10 @@ from typing import ClassVar, Protocol, Self
 
 import attrs
 
+from rootsy.exceptions import ParserNotFoundError
 from rootsy.types import GedcomLine, ParsingContext
 
-
-class ParserNotFoundError(Exception):
-    """Exception raised when no parser is found for a given tag."""
-
-    def __init__(self, tag: str) -> None:
-        self.tag = tag
-        super().__init__(f"No parser found for tag {tag}")
+__all__ = ["GedcomParser", "GedcomRecord", "ParserNotFoundError", "ParsingContext"]
 
 
 @attrs.frozen(kw_only=True)
@@ -20,6 +15,13 @@ class GedcomRecord(abc.ABC):
     """Base class for all GEDCOM records/structures."""
 
     tag: ClassVar[str]  # Will be defined by each subclass
+    # Set when the tag alone does not identify the structure, as `SOUR` does not:
+    # under HEAD it is the file's source system, at level 0 it is a source record.
+    tag_path: ClassVar[tuple[str, ...] | None] = None
+
+    # Lines of this structure that no field of the model holds: tags rootsy does
+    # not parse yet and vendor extensions such as `_UID`. Nothing is dropped.
+    unparsed: list[GedcomLine] = attrs.field(factory=list)
 
     @classmethod
     def from_lines(cls, lines: list[GedcomLine]) -> Self:
@@ -28,9 +30,9 @@ class GedcomRecord(abc.ABC):
         This provides a standard interface for creating any GEDCOM
         """
         # Get the appropriate parser using the tag
-        from rootsy.registry import get_parser_for_tag
+        from rootsy.registry import get_parser_for_path
 
-        parser = get_parser_for_tag(cls.tag)
+        parser = get_parser_for_path(cls.tag_path or (cls.tag,))
 
         if parser is None:
             raise ParserNotFoundError(cls.tag)
@@ -44,6 +46,9 @@ class GedcomParser[Result: GedcomRecord](Protocol):
     """Protocol for parsing specific record types."""
 
     handles_tag: ClassVar[str]
+    # Full tag path this parser claims, for a tag that means different things in
+    # different places. A parser with a path is only reached through that path.
+    handles_path: ClassVar[tuple[str, ...] | None] = None
 
     def parse(
         self,

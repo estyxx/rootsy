@@ -3,20 +3,11 @@ from typing import ClassVar
 import attrs
 
 from rootsy.adapters import GedcomRecord
+from rootsy.exceptions import UnsupportedGedcomVersionError
 from rootsy.models.address import Address
 from rootsy.models.date import GedcomDate
 
 SUPPORTED_VERSIONS = ("5.5.1", "7.0")
-
-
-class UnsupportedGedcomVersionError(ValueError):
-    def __init__(self, version: str) -> None:
-        message = (
-            f"Unsupported GEDCOM version '{version}'. "
-            "Supported versions are 5.5.1 and 7.0"
-        )
-
-        super().__init__(message)
 
 
 @attrs.frozen(slots=True, kw_only=True)
@@ -24,6 +15,8 @@ class HeaderSource(GedcomRecord):
     """Information about the system/software that generated this file."""
 
     tag: ClassVar[str] = "SOUR"
+    # A level-0 SOUR is a source record, not the header's source system.
+    tag_path: ClassVar[tuple[str, ...]] = ("HEAD", "SOUR")
 
     system_id: str
     version: str | None = None
@@ -50,6 +43,6 @@ class Header(GedcomRecord):
     def validate_version(self, __: str, value: str) -> None:
         """Validate if this is a supported version."""
         if value not in SUPPORTED_VERSIONS:
-            raise UnsupportedGedcomVersionError(value)
+            raise UnsupportedGedcomVersionError(value, SUPPORTED_VERSIONS)
 
     version: str = attrs.field(validator=validate_version)

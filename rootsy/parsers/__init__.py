@@ -4,6 +4,7 @@ from .family import FamilyParser
 from .header import HeaderParser, HeaderSourceParser
 from .individual import IndividualParser
 from .multimedia import MultimediaParser
+from .source import SourceRecordParser
 
 __all__ = [
     "AddressParser",
@@ -13,4 +14,5 @@ __all__ = [
     "HeaderSourceParser",
     "IndividualParser",
     "MultimediaParser",
+    "SourceRecordParser",
 ]

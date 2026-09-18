@@ -1,6 +1,18 @@
-from typing import ClassVar, Self
+from __future__ import annotations
+
+import re
+from typing import Self
 
 import attrs
+
+# `level [xref] tag [value]`: the delimiter is a single space and the value runs
+# to the end of the line, so it may itself contain spaces and `@` characters.
+_LINE = re.compile(
+    r"^(?P<level>\d+)"
+    r"(?: +(?P<xref>@[^@\s]+@))?"
+    r" +(?P<tag>\S+)"
+    r"(?: (?P<value>.*))?$",
+)
 
 
 @attrs.frozen(slots=True, kw_only=True)
@@ -11,35 +23,23 @@ class GedcomLine:
     tag: str
     value: str
     xref: str | None = None
-
-    # Minimum required parts in a GEDCOM line (level + tag)
-    MIN_PARTS: ClassVar[int] = 2  # A GEDCOM line must have at least a level and a tag
+    # Where the line came from, for error messages. A line means the same thing
+    # wherever it was read from, so it is left out of equality.
+    line_number: int | None = attrs.field(default=None, eq=False)
 
     @classmethod
-    def from_string(cls, line: str) -> Self | None:
-        """Parse a GEDCOM line into its components."""
-        parts = line.split(maxsplit=2)
-        if len(parts) < cls.MIN_PARTS:
+    def from_string(cls, line: str, line_number: int | None = None) -> Self | None:
+        """Parse a GEDCOM line into its components, or `None` if it is not one."""
+        match = _LINE.match(line.strip())
+        if match is None:
             return None
 
-        level = int(parts[0])
-        remainder = parts[1:]
-
-        # Handle cross-reference IDs
-        if remainder[0].startswith("@") and remainder[0].endswith("@"):
-            xref = remainder[0]
-            tag = remainder[1] if len(remainder) > 1 else ""
-            value = remainder[2] if len(remainder) > cls.MIN_PARTS else ""
-        else:
-            xref = None
-            tag = remainder[0]
-            value = remainder[1] if len(remainder) > 1 else ""
-
         return cls(
-            level=level,
-            tag=tag,
-            value=value,
-            xref=xref,
+            level=int(match["level"]),
+            tag=match["tag"],
+            value=match["value"] or "",
+            xref=match["xref"],
+            line_number=line_number,
         )
 
 

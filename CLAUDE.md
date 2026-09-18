@@ -37,9 +37,11 @@ Run all four before declaring a task finished.
 ```
 rootsy/
   reader.py        GedcomReader: file → GedcomLine → groups of lines per level-0 record
-  types.py         GedcomLine (level, xref, tag, value) and ParsingContext (tag path)
-  adapters.py      GedcomRecord base class; GedcomParser protocol; ParserNotFoundError
-  registry.py      discovers parser classes in rootsy.parsers and maps tag → parser
+  types.py         GedcomLine (level, xref, tag, value, line number) and ParsingContext
+  lines.py         helpers over a sequence of GedcomLine (substructure span, CONC/CONT)
+  exceptions.py    RootsyError and every error rootsy raises
+  adapters.py      GedcomRecord base class (with `unparsed`); GedcomParser protocol
+  registry.py      discovers parser classes in rootsy.parsers, maps tag/tag path → parser
   parser.py        parse_gedcom(path) → GedcomStructure  (the public entry point)
   models/          one attrs model per record/structure (individual, family, header,
                    address, event, multimedia, …) plus GedcomStructure
@@ -50,7 +52,13 @@ tests/             pytest; fixtures are small inline GEDCOM snippets
 Flow: `GedcomReader.line_groups()` yields each level-0 record with its
 substructure as a list of `GedcomLine`. `parse_gedcom` looks up a parser by
 the record's tag in the registry, calls `parser.parse(lines, context)`, and
-stores the resulting model in `GedcomStructure`.
+stores the resulting model in `GedcomStructure`. A level-0 tag with no parser
+is logged with its line number and skipped, never raised.
+
+A tag that means different things in different places is registered by its full
+tag path instead: `HeaderSourceParser` claims `("HEAD", "SOUR")`, so a level-0
+`SOUR` reaches `SourceRecordParser`. Look a parser up with
+`get_parser_for_path(context.path)`, which falls back to the last tag.
 
 ## Conventions
 
@@ -147,31 +155,31 @@ Example: "In this PR we parse birth and death events on individuals, so the tree
 - MyHeritage exports include level-0 `SOUR`, `NOTE`, `OBJE`, `SUBM` and
   `REPO` records. Every level-0 tag must have a parser or be explicitly
   skipped with a logged warning; an unknown tag must not crash `parse_gedcom`.
-- Line parsing: `GedcomLine.from_string` uses `split(maxsplit=2)`. That is
-  correct for `level [xref] tag [value]` only when the value is the last token;
-  verify it against lines like `0 @N1@ NOTE some text` and fix if needed.
+- Line parsing: `GedcomLine.from_string` matches `level [xref] tag [value]`
+  with the value running to the end of the line, so `0 @N1@ NOTE some text` and
+  `1 EMAIL a@b.com` both come out right. Lines carry the `line_number` they were
+  read from, for error messages; it is left out of equality.
 
 ## Known gaps (as of September 2026)
 
-- `parse_gedcom` calls `.parse` on the registry result without checking for
-  `None`, so any unhandled level-0 tag raises `AttributeError`.
-- Only `Event` has an `unparsed` field; every other model still drops the tags
-  it does not know.
 - `EventParser` keeps `SOUR` citations as raw lines; there is no citation
   model yet. `1 MARR Y` parses as an event, but the `Y` itself is dropped.
-- `HeaderSourceParser` registers `SOUR`, so top-level source records are
-  mis-parsed as the header's source.
+- Level-0 `SUBM`, `REPO` and `NOTE` records have no parser, so they are logged
+  and skipped. `SourceRecord` and `Multimedia` are minimal: most of what those
+  records hold lands in `unparsed`.
+- `GedcomStructure` keeps the header, individuals, families and sources.
+  A parsed `OBJE` has nowhere to go yet.
+- There is no version detection: `HeaderParser` reads `GEDC.VERS` but every
+  record is then parsed the same way whatever the version says.
 - No CLI, no `[build-system]` in `pyproject.toml`, no mypy, no CI.
 
 ## Roadmap (in order)
 
-1. Make `parse_gedcom` resilient: registry miss → warning + skip; add
-   `unparsed` capture on every model.
-2. Version detection and GEDCOM 7.0 support with the official sample files as
+1. Version detection and GEDCOM 7.0 support with the official sample files as
    conformance tests.
-3. `rootsy export file.ged --out file.json` CLI (Typer or argparse) and a
+2. `rootsy export file.ged --out file.json` CLI (Typer or argparse) and a
    `[build-system]` so the package installs cleanly; publish to PyPI.
-4. mypy strict, GitHub Actions CI (ruff, mypy, pytest on 3.13).
+3. mypy strict, GitHub Actions CI (ruff, mypy, pytest on 3.13).
 
 When adding support for a new tag, work spec-first: find it in the
 specification, add the field to the model, add the `case` to the parser, add a

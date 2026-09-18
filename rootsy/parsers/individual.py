@@ -32,6 +32,7 @@ class IndividualParser(GedcomParser[Individual]):
             "events": [],
             "child_of_families": [],
             "spouse_in_families": [],
+            "unparsed": [],
         }
         lines_consumed = 0
         events = EventParser()
@@ -73,6 +74,9 @@ class IndividualParser(GedcomParser[Individual]):
                     data["events"].append(event)
                     lines_consumed += event_lines - 1
                     i += event_lines - 1
+                # Untyped events, NOTE, OBJE, CHAN, … and vendor extensions.
+                case _:
+                    data["unparsed"].append(line)
 
             i += 1
 
