@@ -110,6 +110,83 @@ class TestExport:
         assert "error:" in result.stderr
 
 
+class TestAnonymisedExport:
+    def test_replaces_the_people_in_the_file(
+        self,
+        runner: CliRunner,
+        gedcom_file: Path,
+        tmp_path: Path,
+    ) -> None:
+        out = tmp_path / "anonymous.json"
+
+        result = runner.invoke(
+            app,
+            ["export", str(gedcom_file), "--out", str(out), "--anonymise"],
+        )
+
+        assert result.exit_code == 0
+        text = out.read_text(encoding="utf-8")
+        assert "Lovelace" not in text
+        assert json.loads(text)["individuals"]["@I1@"]["surname"] == "Surname1"
+
+    def test_the_american_spelling_works_too(
+        self,
+        runner: CliRunner,
+        gedcom_file: Path,
+        tmp_path: Path,
+    ) -> None:
+        out = tmp_path / "anonymous.json"
+
+        result = runner.invoke(
+            app,
+            ["export", str(gedcom_file), "--out", str(out), "--anonymize"],
+        )
+
+        assert result.exit_code == 0
+        assert "Lovelace" not in out.read_text(encoding="utf-8")
+
+    def test_dates_says_how_much_of_each_date_to_keep(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+    ) -> None:
+        source = tmp_path / "dated.ged"
+        source.write_text(
+            "0 HEAD\n1 GEDC\n2 VERS 5.5.1\n"
+            "0 @I1@ INDI\n1 BIRT\n2 DATE 12 JUL 1920\n0 TRLR\n",
+            encoding="utf-8",
+        )
+        out = tmp_path / "anonymous.json"
+
+        runner.invoke(
+            app,
+            [
+                "export",
+                str(source),
+                "--out",
+                str(out),
+                "--anonymise",
+                "--dates",
+                "remove",
+            ],
+        )
+
+        birth = json.loads(out.read_text(encoding="utf-8"))
+        assert birth["individuals"]["@I1@"]["events"][0]["date"] is None
+
+    def test_the_file_is_written_as_it_was_without_the_flag(
+        self,
+        runner: CliRunner,
+        gedcom_file: Path,
+        tmp_path: Path,
+    ) -> None:
+        out = tmp_path / "plain.json"
+
+        runner.invoke(app, ["export", str(gedcom_file), "--out", str(out)])
+
+        assert "Lovelace" in out.read_text(encoding="utf-8")
+
+
 class TestStats:
     def test_counts_records(self, runner: CliRunner, gedcom_file: Path) -> None:
         result = runner.invoke(app, ["stats", str(gedcom_file)])

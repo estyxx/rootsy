@@ -44,6 +44,7 @@ rootsy/
   adapters.py      GedcomRecord base class (with `unparsed`); GedcomParser protocol
   registry.py      discovers parser classes in rootsy.parsers, maps tag/tag path → parser
   parser.py        parse_gedcom(path) → GedcomStructure  (the public entry point)
+  anonymise.py     anonymise(structure) → a GedcomStructure that names nobody
   cli.py           `rootsy export` and `rootsy stats`, the `rootsy` command
   models/          one attrs model per record/structure (individual, family, header,
                    address, event, multimedia, …) plus GedcomStructure
@@ -107,6 +108,9 @@ tag path instead: `HeaderSourceParser` claims `("HEAD", "SOUR")`, so a level-0
 - Docstrings on public classes and functions: one summary line, then detail
   only if it adds something the signature does not say.
 - No I/O in models or parsers. Only `reader.py` touches files.
+- `anonymise.py` rebuilds every model explicitly rather than evolving it, so a
+  field added to a model without a line there comes out empty instead of
+  leaking. Add the field to `_Anonymiser` in the same change as the parser.
 - Exceptions: subclass a `RootsyError` base; raise with a message that
   includes the line number when possible.
 

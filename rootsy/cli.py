@@ -14,6 +14,7 @@ from rich.logging import RichHandler
 from rich.markup import escape
 from rich.table import Table
 
+from rootsy.anonymise import AnonymisationPolicy, DatePolicy, anonymise
 from rootsy.exceptions import RootsyError
 from rootsy.parser import parse_gedcom
 
@@ -55,6 +56,7 @@ def main() -> None:
 @app.command()
 def export(
     file: GedcomFile,
+    *,
     out: Annotated[
         Path,
         typer.Option(
@@ -73,9 +75,27 @@ def export(
             help="Spaces to indent the JSON by; 0 writes it on one line.",
         ),
     ] = 2,
+    anonymise_data: Annotated[
+        bool,
+        typer.Option(
+            "--anonymise",
+            "--anonymize",
+            "-a",
+            help="Replace every personal detail with a stand-in before writing.",
+        ),
+    ] = False,
+    dates: Annotated[
+        DatePolicy,
+        typer.Option(
+            help="How much of each date --anonymise keeps.",
+        ),
+    ] = DatePolicy.YEAR,
 ) -> None:
     """Parse a GEDCOM file and write it out as JSON."""
     structure = _parse(file)
+
+    if anonymise_data:
+        structure = anonymise(structure, AnonymisationPolicy(dates=dates))
     text = json.dumps(
         structure.to_dict(),
         indent=indent or None,
