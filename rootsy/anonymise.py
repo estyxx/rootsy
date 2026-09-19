@@ -32,6 +32,7 @@ from rootsy.models import (
     Header,
     HeaderSource,
     Individual,
+    Multimedia,
     SkippedRecord,
     SourceRecord,
 )
@@ -164,6 +165,8 @@ class _Anonymiser:
             name=_slashed_name(individual.name, given, surname),
             given_name=given,
             surname=surname,
+            name_prefix=self.labels.maybe("Prefix", individual.name_prefix),
+            married_name=self.labels.maybe("Married name", individual.married_name),
             sex=individual.sex if self.policy.keep_sex else None,
             events=[self.event(event) for event in individual.events],
             child_of_families=[
@@ -173,6 +176,15 @@ class _Anonymiser:
                 self.xref(xref) for xref in individual.spouse_in_families
             ],
             email=self.maybe_email(individual.email),
+            occupations=[
+                self.labels.of("Occupation ", occupation)
+                for occupation in individual.occupations
+            ],
+            notes=[self.labels.of("Note ", note) for note in individual.notes],
+            media=[self.multimedia(item) for item in individual.media],
+            uid=self.labels.maybe("uid-", individual.uid),
+            vendor=self.vendor(individual.vendor),
+            citations=self.lines(individual.citations),
             unparsed=self.lines(individual.unparsed),
         )
 
@@ -185,6 +197,9 @@ class _Anonymiser:
             children=[self.xref(child) for child in family.children],
             marriage_event=self.maybe_event(family.marriage_event),
             divorce_event=self.maybe_event(family.divorce_event),
+            events=[self.event(event) for event in family.events],
+            uid=self.labels.maybe("uid-", family.uid),
+            vendor=self.vendor(family.vendor),
             unparsed=self.lines(family.unparsed),
         )
 
@@ -196,6 +211,8 @@ class _Anonymiser:
             author=self.labels.maybe("Author ", source.author),
             publication=self.labels.maybe("Publication ", source.publication),
             text=self.labels.maybe("Text ", source.text),
+            uid=self.labels.maybe("uid-", source.uid),
+            vendor=self.vendor(source.vendor),
             unparsed=self.lines(source.unparsed),
         )
 
@@ -242,8 +259,15 @@ class _Anonymiser:
         """Rebuild an event: the same type, a date and place that name nobody."""
         return Event(
             type=event.type,
+            # What an `EVEN` was ("Engagement") describes the file, not a person.
+            custom_type=event.custom_type,
             date=self.date(event.date),
             place=self.place(event.place),
+            cause=self.labels.maybe("Cause ", event.cause),
+            # An age says no more about a person than the dates already kept do.
+            age=event.age,
+            email=self.maybe_email(event.email),
+            address=None if event.address is None else self.address(event.address),
             notes=[self.labels.of("Note ", note) for note in event.notes],
             citations=self.lines(event.citations),
             unparsed=self.lines(event.unparsed),
@@ -252,6 +276,21 @@ class _Anonymiser:
     def maybe_event(self, event: Event | None) -> Event | None:
         """Rebuild an event a record may not have."""
         return None if event is None else self.event(event)
+
+    def multimedia(self, media: Multimedia) -> Multimedia:
+        """Replace a photo's path, title and caption; keep that it was there."""
+        return Multimedia(
+            id=self.maybe_xref(media.id),
+            # A file path names the person as often as the title does.
+            file=self.labels.maybe("file", media.file),
+            format=media.format,
+            title=self.labels.maybe("Photo ", media.title),
+            date=self.date(media.date),
+            place=self.place(media.place),
+            primary=media.primary,
+            vendor=self.vendor(media.vendor),
+            unparsed=self.lines(media.unparsed),
+        )
 
     def address(self, address: Address) -> Address:
         """Replace a postal address, keeping only that the record had one."""
@@ -293,6 +332,14 @@ class _Anonymiser:
     def maybe_email(self, email: str | None) -> str | None:
         """Stand in for an address a record may not carry."""
         return None if email is None else self.email(email)
+
+    def vendor(self, values: dict[str, str]) -> dict[str, str]:
+        """Keep which vendor tags a record carried, not what they said.
+
+        A vendor tag means whatever its exporter decided, so its value is
+        dropped for the same reason the value of an unparsed line is.
+        """
+        return dict.fromkeys(values, "")
 
     def xref(self, xref: str) -> str:
         """Map a cross-reference to the one its record was given."""

@@ -5,6 +5,7 @@ import attrs
 from rootsy.adapters import GedcomParser
 from rootsy.models import Family
 from rootsy.parsers.event import EventParser
+from rootsy.parsers.vendor import RECORD_TAGS
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -26,6 +27,8 @@ class FamilyParser(GedcomParser[Family]):
         """Parse record from GEDCOM lines."""
         data: dict[str, Any] = {
             "children": [],
+            "events": [],
+            "vendor": {},
             "unparsed": [],
         }
         lines_consumed = 0
@@ -53,10 +56,20 @@ class FamilyParser(GedcomParser[Family]):
                     data["wife"] = line.value
                 case "CHIL":
                     data["children"].append(line.value)
+                case "_UID":
+                    data["uid"] = line.value
+                case tag if tag in RECORD_TAGS:
+                    data["vendor"][tag] = line.value
                 case "MARR" | "DIV":
                     event, event_lines = events.parse(lines[i:], context)
                     key = "marriage_event" if line.tag == "MARR" else "divorce_event"
                     data[key] = event
+                    lines_consumed += event_lines - 1
+                    i += event_lines - 1
+                # An event with no tag of its own; TYPE says what it was.
+                case "EVEN":
+                    event, event_lines = events.parse(lines[i:], context)
+                    data["events"].append(event)
                     lines_consumed += event_lines - 1
                     i += event_lines - 1
                 # Other events, SLGS, NOTE, SOUR, … and vendor extensions.

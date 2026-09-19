@@ -85,17 +85,17 @@ class TestTagPaths:
             individual(
                 """
                 0 @I1@ INDI
-                1 OBJE
-                2 FILE photo.jpg
-                3 FORM jpeg
+                1 CHAN
+                2 DATE 22 DEC 2024
+                3 TIME 09:30
                 """,
             ),
         )
 
         assert paths_of(structure, "INDI") == [
-            ("INDI > OBJE", 1),
-            ("INDI > OBJE > FILE", 1),
-            ("INDI > OBJE > FILE > FORM", 1),
+            ("INDI > CHAN", 1),
+            ("INDI > CHAN > DATE", 1),
+            ("INDI > CHAN > DATE > TIME", 1),
         ]
 
     def test_a_sibling_does_not_inherit_the_line_before_it(self) -> None:
@@ -103,17 +103,17 @@ class TestTagPaths:
             individual(
                 """
                 0 @I1@ INDI
-                1 OBJE
-                2 FILE photo.jpg
-                1 _UID 8F6A
+                1 CHAN
+                2 DATE 22 DEC 2024
+                1 REFN 8F6A
                 """,
             ),
         )
 
         assert paths_of(structure, "INDI") == [
-            ("INDI > OBJE", 1),
-            ("INDI > OBJE > FILE", 1),
-            ("INDI > _UID", 1),
+            ("INDI > CHAN", 1),
+            ("INDI > CHAN > DATE", 1),
+            ("INDI > REFN", 1),
         ]
 
     def test_an_event_is_named_by_the_tag_it_was_read_from(self) -> None:
@@ -126,7 +126,7 @@ class TestTagPaths:
                 3 MAP
                 4 LATI N45.4
                 1 DEAT
-                2 AGE 64
+                2 RELI Catholic
                 """,
             ),
         )
@@ -134,7 +134,7 @@ class TestTagPaths:
         assert paths_of(structure, "INDI") == [
             ("INDI > BIRT > MAP", 1),
             ("INDI > BIRT > MAP > LATI", 1),
-            ("INDI > DEAT > AGE", 1),
+            ("INDI > DEAT > RELI", 1),
         ]
 
     def test_a_parent_the_parser_read_itself_is_not_in_the_path(self) -> None:
@@ -200,13 +200,13 @@ class TestTagPaths:
 class TestCounting:
     def test_paths_are_sorted_by_frequency(self) -> None:
         structure = structure_of(
-            individual("0 @I1@ INDI\n1 OBJE\n1 CHAN\n1 REFN 7"),
-            individual("0 @I2@ INDI\n1 OBJE\n1 CHAN"),
-            individual("0 @I3@ INDI\n1 OBJE"),
+            individual("0 @I1@ INDI\n1 ASSO @I9@\n1 CHAN\n1 REFN 7"),
+            individual("0 @I2@ INDI\n1 ASSO @I9@\n1 CHAN"),
+            individual("0 @I3@ INDI\n1 ASSO @I9@"),
         )
 
         assert paths_of(structure, "INDI") == [
-            ("INDI > OBJE", 3),
+            ("INDI > ASSO", 3),
             ("INDI > CHAN", 2),
             ("INDI > REFN", 1),
         ]

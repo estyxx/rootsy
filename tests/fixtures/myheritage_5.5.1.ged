@@ -1,0 +1,119 @@
+0 HEAD
+1 SOUR MYHERITAGE
+2 VERS 1000
+2 NAME MyHeritage Family Tree Builder
+2 CORP MyHeritage
+3 ADDR 3 Ariel Sharon Street
+4 CITY Or Yehuda
+4 CTRY Israel
+2 DATA Rossi Family Tree
+1 DEST MYHERITAGE
+1 DATE 12 MAR 2024
+1 CHAR UTF-8
+1 LANG Italian
+1 GEDC
+2 VERS 5.5.1
+1 _PROJECT_GUID 8C5B0F7A-0000-4000-8000-000000000000
+1 _EXPORTED_FROM_SITE_ID 123456
+1 _SM_MERGES 0
+0 @I1@ INDI
+1 NAME Giovanni /Rossi/
+2 GIVN Giovanni
+2 SURN Rossi
+2 NPFX Cav.
+1 SEX M
+1 _UID 4F2C1AE7B90000000000000000000001
+1 RIN 501
+1 _UPD 12 JUN 2020 09:15:00 GMT-5
+1 OCCU Contadino
+1 NOTE Emigrated to Argentina in 1913 and came back
+2 CONT four years later.
+1 OBJE
+2 FILE photos/giovanni.jpg
+3 FORM jpg
+2 TITL Giovanni in uniform
+2 _DATE ABT 1915
+2 _PLACE Verona, Veneto, Italia
+2 _PRIM Y
+2 _PERSONALPHOTO Y
+2 _CUTOUT Y
+2 _POSITION 0.12 0.30 0.44 0.61
+1 BIRT
+2 DATE ABT 1890
+2 PLAC Verona, Veneto, Italia
+2 SOUR @S1@
+3 PAGE Registro dei nati 1890, atto 214
+1 RESI
+2 DATE FROM 1919 TO 1954
+2 ADDR Via Mazzini 12
+3 CITY Verona
+3 POST 37121
+3 CTRY Italia
+2 EMAIL giovanni.rossi@example.com
+1 DEAT
+2 DATE 3 FEB 1954
+2 PLAC Verona, Veneto, Italia
+2 CAUS Polmonite
+2 AGE 64y
+2 NOTE Died at home.
+1 BURI
+2 DATE 5 FEB 1954
+2 PLAC Cimitero Monumentale, Verona
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Maria /Bianchi/
+2 GIVN Maria
+2 SURN Bianchi
+2 _MARNM Maria /Rossi/
+1 SEX F
+1 _UID 4F2C1AE7B90000000000000000000002
+1 RIN 502
+1 OBJE
+2 FILE photos/maria-group.jpg
+3 FORM jpg
+2 TITL The Bianchi sisters
+2 _PARENTPHOTO @I3@
+1 OBJE
+2 FILE photos/maria.jpg
+3 FORM jpg
+2 _PRIM Y
+1 BIRT
+2 DATE MAR 1893
+2 PLAC Padova, Veneto, Italia
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Luigi /Rossi/
+1 SEX M
+1 _UID 4F2C1AE7B90000000000000000000003
+1 OCCU Fornaio
+1 OCCU Mugnaio
+1 BIRT
+2 DATE 12 JUL 1920
+2 PLAC Verona, Veneto, Italia
+2 NOTE Registered three days later.
+1 SOUR @S1@
+2 PAGE Registro dei nati 1920, atto 88
+1 FAMC @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+1 _UID 9B3E7C0000000000000000000000000F
+1 RIN 301
+1 _UPD 12 JUN 2020 09:15:00 GMT-5
+1 EVEN
+2 TYPE Engagement
+2 DATE 2 MAY 1918
+2 PLAC Verona, Veneto, Italia
+1 MARR
+2 DATE 14 JUN 1919
+2 PLAC Verona, Veneto, Italia
+0 @S1@ SOUR
+1 TITL Registri dello stato civile di Verona
+1 AUTH Comune di Verona
+1 PUBL Archivio di Stato di Verona, 1988
+1 TEXT Nati, matrimoni e morti, 1866-1930.
+1 _UID 7C4A200000000000000000000000000A
+1 RIN 3
+1 _UPD 12 JUN 2020 09:15:00 GMT-5
+0 TRLR

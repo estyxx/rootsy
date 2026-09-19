@@ -170,13 +170,16 @@ Example: "In this PR we parse birth and death events on individuals, so the tree
 
 ## Known gaps (as of September 2026)
 
-- `EventParser` keeps `SOUR` citations as raw lines; there is no citation
-  model yet. `1 MARR Y` parses as an event, but the `Y` itself is dropped.
+- `EventParser` and `IndividualParser` keep `SOUR` citations as raw lines;
+  there is no citation model yet. `1 MARR Y` parses as an event, but the `Y`
+  itself is dropped.
 - Level-0 `SUBM`, `REPO` and `NOTE` records have no parser, so they are logged
-  and skipped. `SourceRecord` and `Multimedia` are minimal: most of what those
-  records hold lands in `unparsed`.
+  and skipped.
+- `HeaderParser` is where the unparsed tags now are: `GEDC`, `FILE`, the
+  contact details beside `CORP`, and the exporter's own header tags.
 - `GedcomStructure` keeps the header, individuals, families, sources and the
-  level-0 records it skipped. A parsed `OBJE` has nowhere to go yet.
+  level-0 records it skipped. A level-0 `OBJE` record has nowhere to go yet,
+  though an `OBJE` inline on an `INDI` becomes `Individual.media`.
 - There is no version detection: `HeaderParser` reads `GEDC.VERS` but every
   record is then parsed the same way whatever the version says.
 - The package is not on PyPI yet, though it now builds with hatchling.

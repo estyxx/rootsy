@@ -117,15 +117,31 @@ class TestIndividual:
         assert individual.spouse_in_families == ["@F1@", "@F2@"]
         assert individual.child_of_families == ["@F3@"]
 
+    def test_burial_is_an_event_too(self, parser: IndividualParser) -> None:
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 BURI
+            2 DATE 5 FEB 1954
+            2 PLAC Cimitero Monumentale, Verona
+            """,
+        )
+
+        individual, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert [event.type for event in individual.events] == [EventType.BURIAL]
+        assert individual.events[0].place == "Cimitero Monumentale, Verona"
+        assert lines_consumed == len(lines)
+
     def test_unknown_tags_are_kept(self, parser: IndividualParser) -> None:
         """Nothing the spec defines here, or a vendor added, may be dropped."""
         lines = gedcom_lines(
             """
             0 @I1@ INDI
             1 NAME Giovanni /Rossi/
-            1 _UID 4E2F0B9C
-            1 RIN 42
-            1 OCCU Farmer
+            1 REFN 4E2F0B9C
+            1 CHAN
+            2 DATE 22 DEC 2024
             1 SEX M
             """,
         )
@@ -134,9 +150,9 @@ class TestIndividual:
 
         assert individual.sex == "M"
         assert [line.tag for line in individual.unparsed] == [
-            "_UID",
-            "RIN",
-            "OCCU",
+            "REFN",
+            "CHAN",
+            "DATE",
         ]
         assert lines_consumed == len(lines)
 
@@ -214,3 +230,210 @@ class TestNameParts:
         assert individual.name == "Giovanni /Rossi/"
         assert individual.given_name == "Gianni"
         assert individual.surname == "Rossi-Bianchi"
+
+
+class TestAttributes:
+    def test_occupations_are_collected_in_the_order_they_are_written(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        """OCCU may be written more than once; a person can change trade."""
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 OCCU Contadino
+            1 OCCU Fornaio
+            """,
+        )
+
+        individual, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert individual.occupations == ["Contadino", "Fornaio"]
+        assert lines_consumed == len(lines)
+
+    def test_notes_join_their_continuations(self, parser: IndividualParser) -> None:
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 NOTE Emigrated to Argenti
+            2 CONC na
+            2 CONT and never came back.
+            1 NOTE A second note.
+            """,
+        )
+
+        individual, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert individual.notes == [
+            "Emigrated to Argentina\nand never came back.",
+            "A second note.",
+        ]
+        assert individual.unparsed == []
+        assert lines_consumed == len(lines)
+
+    def test_the_name_prefix_and_married_name(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        """MyHeritage writes the name taken on marrying as `_MARNM`."""
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 NAME Maria /Bianchi/
+            2 GIVN Maria
+            2 SURN Bianchi
+            2 NPFX Dott.ssa
+            2 _MARNM Maria /Rossi/
+            """,
+        )
+
+        individual, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert individual.name == "Maria /Bianchi/"
+        assert individual.surname == "Bianchi"
+        assert individual.name_prefix == "Dott.ssa"
+        assert individual.married_name == "Maria /Rossi/"
+        assert individual.unparsed == []
+        assert lines_consumed == len(lines)
+
+    def test_source_citations_are_kept_as_raw_lines(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 SOUR @S1@
+            2 PAGE Register 4, page 12
+            2 QUAY 3
+            1 SEX M
+            """,
+        )
+
+        individual, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert [line.tag for line in individual.citations] == ["SOUR", "PAGE", "QUAY"]
+        assert individual.citations[1].value == "Register 4, page 12"
+        assert individual.sex == "M"
+        assert lines_consumed == len(lines)
+
+
+class TestStableIds:
+    def test_the_uid_is_read_and_the_other_vendor_tags_are_named(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 _UID 4F2C1AE7B9
+            1 RIN 501
+            1 _UPD 12 JUN 2020 09:15:00 GMT-5
+            """,
+        )
+
+        individual, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert individual.uid == "4F2C1AE7B9"
+        assert individual.vendor == {
+            "RIN": "501",
+            "_UPD": "12 JUN 2020 09:15:00 GMT-5",
+        }
+        assert individual.unparsed == []
+        assert lines_consumed == len(lines)
+
+    def test_a_record_without_them_says_so(self, parser: IndividualParser) -> None:
+        individual, _ = parser.parse(gedcom_lines("0 @I1@ INDI"), ParsingContext())
+
+        assert individual.uid is None
+        assert individual.vendor == {}
+
+
+class TestMedia:
+    def test_an_inline_object_becomes_a_multimedia_record(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 NAME Giovanni /Rossi/
+            1 OBJE
+            2 FILE photos/giovanni.jpg
+            3 FORM jpg
+            2 TITL Giovanni in uniform
+            2 _DATE ABT 1915
+            2 _PLACE Verona
+            2 _PRIM Y
+            2 _CUTOUT Y
+            1 SEX M
+            """,
+        )
+
+        individual, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert len(individual.media) == 1
+        photo = individual.media[0]
+        assert photo.file == "photos/giovanni.jpg"
+        assert photo.format == "jpg"
+        assert photo.title == "Giovanni in uniform"
+        assert photo.date is not None
+        assert photo.date.year == 1915
+        assert photo.place == "Verona"
+        assert photo.vendor == {"_CUTOUT": "Y"}
+        # The OBJE owns its own lines and hands the rest back.
+        assert individual.sex == "M"
+        assert individual.unparsed == []
+        assert lines_consumed == len(lines)
+
+    def test_the_primary_photo_is_the_one_marked_prim(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 OBJE
+            2 FILE photos/group.jpg
+            1 OBJE
+            2 FILE photos/portrait.jpg
+            2 _PRIM Y
+            """,
+        )
+
+        individual, _ = parser.parse(lines, ParsingContext())
+
+        assert [photo.file for photo in individual.media] == [
+            "photos/group.jpg",
+            "photos/portrait.jpg",
+        ]
+        assert individual.primary_photo is not None
+        assert individual.primary_photo.file == "photos/portrait.jpg"
+
+    def test_without_a_prim_the_first_photo_stands_in(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            0 @I1@ INDI
+            1 OBJE
+            2 FILE photos/group.jpg
+            1 OBJE
+            2 FILE photos/portrait.jpg
+            """,
+        )
+
+        individual, _ = parser.parse(lines, ParsingContext())
+
+        assert individual.primary_photo is not None
+        assert individual.primary_photo.file == "photos/group.jpg"
+
+    def test_a_record_with_no_photo_has_no_primary_one(
+        self,
+        parser: IndividualParser,
+    ) -> None:
+        individual, _ = parser.parse(gedcom_lines("0 @I1@ INDI"), ParsingContext())
+
+        assert individual.media == []
+        assert individual.primary_photo is None

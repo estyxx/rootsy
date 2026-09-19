@@ -89,6 +89,69 @@ class TestEventDetail:
         assert event.citations[1].value == "Register 4, page 12"
         assert lines_consumed == 4
 
+    def test_cause_and_age(self, parser: EventParser) -> None:
+        lines = gedcom_lines(
+            """
+            1 DEAT
+            2 DATE 3 FEB 1954
+            2 CAUS Polmo
+            3 CONC nite
+            2 AGE 64y
+            """,
+        )
+
+        event, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert event.cause == "Polmonite"
+        assert event.age == "64y"
+        assert event.unparsed == []
+        assert lines_consumed == len(lines)
+
+    def test_an_address_is_parsed_by_the_address_parser(
+        self,
+        parser: EventParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            1 RESI
+            2 DATE 1920
+            2 ADDR Via Mazzini 12
+            3 CITY Verona
+            3 POST 37121
+            3 CTRY Italia
+            2 EMAIL giovanni@example.com
+            """,
+        )
+
+        event, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert event.address is not None
+        assert event.address.full == "Via Mazzini 12"
+        assert event.address.city == "Verona"
+        assert event.address.postal_code == "37121"
+        assert event.address.country == "Italia"
+        assert event.email == "giovanni@example.com"
+        assert event.unparsed == []
+        assert lines_consumed == len(lines)
+
+    def test_a_generic_event_says_what_it_was(self, parser: EventParser) -> None:
+        """`EVEN` has no meaning of its own; TYPE gives it one."""
+        lines = gedcom_lines(
+            """
+            1 EVEN
+            2 TYPE Engagement
+            2 DATE 2 MAY 1918
+            2 PLAC Verona
+            """,
+        )
+
+        event, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert event.type is EventType.OTHER
+        assert event.custom_type == "Engagement"
+        assert event.place == "Verona"
+        assert lines_consumed == len(lines)
+
     def test_unknown_tags_are_kept(self, parser: EventParser) -> None:
         """Nothing the spec defines here, or a vendor added, may be dropped."""
         lines = gedcom_lines(
@@ -99,7 +162,7 @@ class TestEventDetail:
             2 PLAC Verona
             3 MAP
             4 LATI N45.438
-            2 AGE 0
+            2 RELI Catholic
             2 _UID 1234
             """,
         )
@@ -112,7 +175,7 @@ class TestEventDetail:
             "TIME",
             "MAP",
             "LATI",
-            "AGE",
+            "RELI",
             "_UID",
         ]
         assert lines_consumed == 8

@@ -99,6 +99,59 @@ class TestFamily:
         assert family.husband is None
         assert lines_consumed == 3
 
+    def test_a_generic_event_is_kept_with_its_type(
+        self,
+        parser: FamilyParser,
+    ) -> None:
+        """A family event with no tag of its own says what it was in TYPE."""
+        lines = gedcom_lines(
+            """
+            0 @F1@ FAM
+            1 EVEN
+            2 TYPE Engagement
+            2 DATE 2 MAY 1918
+            1 EVEN
+            2 TYPE Census
+            2 DATE 1921
+            1 MARR
+            2 DATE 14 JUN 1919
+            """,
+        )
+
+        family, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert [event.custom_type for event in family.events] == [
+            "Engagement",
+            "Census",
+        ]
+        assert all(event.type is EventType.OTHER for event in family.events)
+        assert family.marriage_event is not None
+        assert family.unparsed == []
+        assert lines_consumed == len(lines)
+
+    def test_the_uid_is_read_and_the_other_vendor_tags_are_named(
+        self,
+        parser: FamilyParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            0 @F1@ FAM
+            1 _UID 9B3E7C
+            1 RIN 12
+            1 _UPD 12 JUN 2020 09:15:00 GMT-5
+            """,
+        )
+
+        family, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert family.uid == "9B3E7C"
+        assert family.vendor == {
+            "RIN": "12",
+            "_UPD": "12 JUN 2020 09:15:00 GMT-5",
+        }
+        assert family.unparsed == []
+        assert lines_consumed == len(lines)
+
     def test_unknown_tags_are_kept(self, parser: FamilyParser) -> None:
         """Nothing the spec defines here, or a vendor added, may be dropped."""
         lines = gedcom_lines(
@@ -108,7 +161,7 @@ class TestFamily:
             1 NCHI 2
             1 SLGS
             2 DATE 14 JUN 1919
-            1 _UID 1234
+            1 _CUSTOM 1234
             """,
         )
 
@@ -119,7 +172,7 @@ class TestFamily:
             "NCHI",
             "SLGS",
             "DATE",
-            "_UID",
+            "_CUSTOM",
         ]
         assert lines_consumed == len(lines)
 

@@ -36,14 +36,14 @@ UNPARSED_SAMPLE = """0 HEAD
 2 VERS 5.5.1
 0 @I1@ INDI
 1 NAME Ada /Lovelace/
-1 OBJE
-2 FILE ada.jpg
+1 ASSO @I2@
+2 RELA Godparent
 1 CHAN
 0 @I2@ INDI
 1 NAME Grace /Hopper/
-1 OBJE
-2 FILE grace.jpg
-1 _UID 8F6A
+1 ASSO @I1@
+2 RELA Godparent
+1 REFN 8F6A
 0 @F1@ FAM
 1 SLGS
 0 @N1@ NOTE a note record
@@ -255,8 +255,8 @@ class TestCoverage:
 
         assert result.exit_code == 0
         rows = table_rows(result.stdout)
-        assert ("INDI > OBJE", 2) in rows
-        assert ("INDI > OBJE > FILE", 2) in rows
+        assert ("INDI > ASSO", 2) in rows
+        assert ("INDI > ASSO > RELA", 2) in rows
         assert ("FAM > SLGS", 1) in rows
         assert ("HEAD > GEDC", 1) in rows
 
@@ -271,10 +271,10 @@ class TestCoverage:
             row for row in table_rows(result.stdout) if row[0].startswith("INDI")
         ]
         assert individuals == [
-            ("INDI > OBJE", 2),
-            ("INDI > OBJE > FILE", 2),
+            ("INDI > ASSO", 2),
+            ("INDI > ASSO > RELA", 2),
             ("INDI > CHAN", 1),
-            ("INDI > _UID", 1),
+            ("INDI > REFN", 1),
         ]
 
     def test_says_how_many_records_of_a_type_held_something_unparsed(

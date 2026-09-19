@@ -51,11 +51,24 @@ SAMPLE = """0 HEAD
 1 SEX M
 1 EMAIL giovanni.rossi@posta.invalid
 1 _UID 4F2C1A
+1 RIN 501
+1 REFN 7
+1 OCCU Contadino
+1 NOTE The family kept his letters.
+1 OBJE
+2 FILE photos/giovanni.jpg
+2 TITL Giovanni in uniform
+2 _PRIM Y
+2 _PLACE Verona, Veneto, Italia
 1 BIRT
 2 DATE ABT 1890
 2 PLAC Verona, Veneto, Italia
 2 NOTE Born at home in via Mazzini.
 2 SOUR @S1@
+1 DEAT
+2 DATE 3 FEB 1954
+2 CAUS Polmonite
+2 AGE 64y
 1 FAMS @F1@
 0 @I500002@ INDI
 1 NAME Maria /Bianchi/
@@ -302,16 +315,100 @@ class TestSex:
         assert structure.individuals["@I1@"].sex is None
 
 
+class TestAttributes:
+    def test_an_occupation_is_replaced_by_a_stand_in(
+        self,
+        anonymised: GedcomStructure,
+    ) -> None:
+        """A trade in a small village names a person almost as surely as a name."""
+        assert anonymised.individuals["@I1@"].occupations == ["Occupation 1"]
+
+    def test_a_note_on_the_person_is_replaced_too(
+        self,
+        anonymised: GedcomStructure,
+    ) -> None:
+        notes = anonymised.individuals["@I1@"].notes
+
+        assert len(notes) == 1
+        assert notes[0].startswith("Note ")
+
+    def test_a_cause_of_death_is_replaced(
+        self,
+        anonymised: GedcomStructure,
+    ) -> None:
+        death = anonymised.individuals["@I1@"].death
+
+        assert death is not None
+        assert death.cause == "Cause 1"
+        assert death.age == "64y"  # says no more than the year already kept
+
+    def test_a_married_name_is_replaced(self) -> None:
+        structure = GedcomStructure()
+        structure.add_individual(
+            Individual(
+                id="@I1@",
+                name="Maria /Bianchi/",
+                surname="Bianchi",
+                name_prefix="Dott.ssa",
+                married_name="Maria /Rossi/",
+            ),
+        )
+
+        person = anonymise(structure).individuals["@I1@"]
+
+        assert person.married_name is not None
+        assert "Rossi" not in person.married_name
+        assert person.name_prefix is not None
+        assert person.name_prefix != "Dott.ssa"
+
+
+class TestStableIds:
+    def test_a_uid_is_replaced_by_a_stand_in(
+        self,
+        anonymised: GedcomStructure,
+    ) -> None:
+        """`_UID` follows a person from export to export, so it identifies them."""
+        uid = anonymised.individuals["@I1@"].uid
+
+        assert uid is not None
+        assert "4F2C1A" not in uid
+
+    def test_a_vendor_tag_keeps_its_name_and_loses_its_value(
+        self,
+        anonymised: GedcomStructure,
+    ) -> None:
+        """Which tags an exporter wrote is the shape; what they said is not."""
+        assert anonymised.individuals["@I1@"].vendor == {"RIN": ""}
+
+
+class TestMedia:
+    def test_a_photo_keeps_only_that_it_was_there(
+        self,
+        anonymised: GedcomStructure,
+    ) -> None:
+        person = anonymised.individuals["@I1@"]
+        photo = person.primary_photo
+
+        assert photo is not None
+        assert photo.primary is True
+        assert photo.file is not None
+        assert "giovanni" not in photo.file
+        assert photo.title == "Photo 1"
+        assert person.birth is not None
+        # The photo was taken where he was born, and says so with one stand-in.
+        assert photo.place == person.birth.place
+
+
 class TestUnparsedLines:
     def test_a_value_no_model_field_holds_is_dropped(
         self,
         anonymised: GedcomStructure,
     ) -> None:
-        """`_UID 4F2C1A` identifies the person as surely as their name does."""
+        """`REFN 7` could be anything, so only the tag survives."""
         unparsed = anonymised.individuals["@I1@"].unparsed
 
         assert [(line.level, line.tag, line.value) for line in unparsed] == [
-            (1, "_UID", ""),
+            (1, "REFN", ""),
         ]
 
     def test_a_line_keeps_where_it_came_from(
@@ -320,7 +417,7 @@ class TestUnparsedLines:
     ) -> None:
         line = anonymised.individuals["@I1@"].unparsed[0]
 
-        assert line.line_number == 25
+        assert line.line_number == 27
 
     def test_a_pointer_value_is_mapped_rather_than_dropped(self) -> None:
         structure = GedcomStructure()
@@ -461,7 +558,7 @@ class TestSkippedRecords:
         skipped = anonymised.skipped
 
         assert [(record.tag, record.line_number) for record in skipped] == [
-            ("NOTE", 54),
+            ("NOTE", 67),
         ]
         assert skipped[0].xref is not None
         assert skipped[0].xref != "@N1@"
@@ -519,6 +616,18 @@ PERSONAL_DETAILS = (
     "2012",
 )
 
+# Everything the MyHeritage-shaped SAMPLE above says about its people, beyond
+# the names and places the other suites already check.
+SAMPLE_DETAILS = (
+    "4F2C1A",
+    "501",
+    "Contadino",
+    "Polmonite",
+    "photos/giovanni.jpg",
+    "Giovanni in uniform",
+    "The family kept his letters.",
+)
+
 
 class TestNothingPersonalSurvives:
     """The point of the whole exercise, checked against a real sample file."""
@@ -538,6 +647,15 @@ class TestNothingPersonalSurvives:
 
         left_behind = [detail for detail in PERSONAL_DETAILS if detail in exported]
         assert left_behind == []
+
+    def test_no_myheritage_detail_is_left_in_the_json(
+        self,
+        anonymised: GedcomStructure,
+    ) -> None:
+        """The tags this change added must not leak what the old ones hid."""
+        exported = json.dumps(anonymised.to_dict())
+
+        assert [detail for detail in SAMPLE_DETAILS if detail in exported] == []
 
     def test_the_file_keeps_its_shape(self, sample_70_file: Path) -> None:
         structure = parse_gedcom(sample_70_file)
