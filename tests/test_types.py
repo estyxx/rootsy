@@ -1,6 +1,7 @@
 """`GedcomLine.from_string`: `level [xref] tag [value]`, in every shape."""
 
 from rootsy.types import GedcomLine, ParsingContext
+from tests.helpers import gedcom_lines
 
 
 class TestFromString:
@@ -90,19 +91,21 @@ class TestFromString:
         assert first == second
 
 
+def walked(*raw_lines: str) -> ParsingContext:
+    """Return a context that has entered each of the given lines in turn."""
+    context = ParsingContext()
+    for line in gedcom_lines("\n".join(raw_lines)):
+        context.enter_level(line)
+    return context
+
+
 class TestParsingContext:
     def test_path_follows_the_levels(self) -> None:
-        context = ParsingContext()
-
-        for raw in ("0 HEAD", "1 SOUR Rootsy", "2 CORP Rootsy"):
-            line = GedcomLine.from_string(raw)
-            assert line is not None
-            context.enter_level(line)
+        context = walked("0 HEAD", "1 SOUR Rootsy", "2 CORP Rootsy")
 
         assert context.path == ("HEAD", "SOUR", "CORP")
 
-        sibling = GedcomLine.from_string("1 DEST ANY")
-        assert sibling is not None
-        context.enter_level(sibling)
+    def test_path_pops_back_up_for_a_sibling(self) -> None:
+        context = walked("0 HEAD", "1 SOUR Rootsy", "2 CORP Rootsy", "1 DEST ANY")
 
         assert context.path == ("HEAD", "DEST")

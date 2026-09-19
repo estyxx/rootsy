@@ -20,17 +20,18 @@ Goals, in priority order:
 ## Stack and commands
 
 Python 3.13+, `attrs`, `uv` for environments, `ruff` for lint and format,
-`pytest` for tests. `mypy --strict` should be added and kept green.
+`pytest` for tests, `mypy` in strict mode, `typer` and `rich` for the CLI.
 
 ```sh
 uv sync                        # create/refresh the venv with dev deps
 uv run pytest                  # run tests
 uv run ruff check . --fix      # lint
 uv run ruff format .           # format
-uv run mypy rootsy             # type-check (once configured)
+uv run mypy                    # type-check rootsy and tests, strictly
 ```
 
-Run all four before declaring a task finished.
+Run all four before declaring a task finished. GitHub Actions runs the same
+four on every push and pull request.
 
 ## Repository layout
 
@@ -43,6 +44,7 @@ rootsy/
   adapters.py      GedcomRecord base class (with `unparsed`); GedcomParser protocol
   registry.py      discovers parser classes in rootsy.parsers, maps tag/tag path → parser
   parser.py        parse_gedcom(path) → GedcomStructure  (the public entry point)
+  cli.py           `rootsy export` and `rootsy stats`, the `rootsy` command
   models/          one attrs model per record/structure (individual, family, header,
                    address, event, multimedia, …) plus GedcomStructure
   parsers/         one parser per record/structure, same names as models/
@@ -53,7 +55,8 @@ Flow: `GedcomReader.line_groups()` yields each level-0 record with its
 substructure as a list of `GedcomLine`. `parse_gedcom` looks up a parser by
 the record's tag in the registry, calls `parser.parse(lines, context)`, and
 stores the resulting model in `GedcomStructure`. A level-0 tag with no parser
-is logged with its line number and skipped, never raised.
+is logged with its line number and kept as a `SkippedRecord` on the structure,
+never raised.
 
 A tag that means different things in different places is registered by its full
 tag path instead: `HeaderSourceParser` claims `("HEAD", "SOUR")`, so a level-0
@@ -167,19 +170,19 @@ Example: "In this PR we parse birth and death events on individuals, so the tree
 - Level-0 `SUBM`, `REPO` and `NOTE` records have no parser, so they are logged
   and skipped. `SourceRecord` and `Multimedia` are minimal: most of what those
   records hold lands in `unparsed`.
-- `GedcomStructure` keeps the header, individuals, families and sources.
-  A parsed `OBJE` has nowhere to go yet.
+- `GedcomStructure` keeps the header, individuals, families, sources and the
+  level-0 records it skipped. A parsed `OBJE` has nowhere to go yet.
 - There is no version detection: `HeaderParser` reads `GEDC.VERS` but every
   record is then parsed the same way whatever the version says.
-- No CLI, no `[build-system]` in `pyproject.toml`, no mypy, no CI.
+- The package is not on PyPI yet, though it now builds with hatchling.
 
 ## Roadmap (in order)
 
 1. Version detection and GEDCOM 7.0 support with the official sample files as
    conformance tests.
-2. `rootsy export file.ged --out file.json` CLI (Typer or argparse) and a
-   `[build-system]` so the package installs cleanly; publish to PyPI.
-3. mypy strict, GitHub Actions CI (ruff, mypy, pytest on 3.13).
+2. Parsers for the level-0 records that are still skipped (`NOTE`, `SUBM`,
+   `REPO`) and a model for source citations.
+3. Publish to PyPI.
 
 When adding support for a new tag, work spec-first: find it in the
 specification, add the field to the model, add the `case` to the parser, add a

@@ -2,7 +2,6 @@ import pytest
 
 from rootsy.adapters import ParsingContext
 from rootsy.parsers import AddressParser
-from rootsy.types import GedcomLine
 from tests.helpers import gedcom_lines
 
 
@@ -34,8 +33,8 @@ class TestAddress:
             "2 WWW www.example.com",
         ]
 
-        gedcom_lines = [GedcomLine.from_string(line) for line in lines]
-        address, lines_consumed = parser.parse(gedcom_lines, ParsingContext())
+        parsed = gedcom_lines("\n".join(lines))
+        address, lines_consumed = parser.parse(parsed, ParsingContext())
 
         # Verify all fields are parsed correctly
         assert address.full == "123 Genealogy St.\nSpringfield, IL 62701\nUSA"
@@ -67,8 +66,8 @@ class TestAddress:
             "2 WWW https://www.example.com",  # 7.0 tends to use full URLs
         ]
 
-        gedcom_lines = [GedcomLine.from_string(line) for line in lines]
-        address, lines_consumed = parser.parse(gedcom_lines, ParsingContext())
+        parsed = gedcom_lines("\n".join(lines))
+        address, lines_consumed = parser.parse(parsed, ParsingContext())
 
         assert address.full == "123 Genealogy St., Springfield, IL 62701, USA"
         assert address.line1 == "123 Genealogy St."
@@ -87,8 +86,8 @@ class TestAddress:
             "1 ADDR 123 Genealogy St, Springfield IL",
         ]
 
-        gedcom_lines = [GedcomLine.from_string(line) for line in lines]
-        address, lines_consumed = parser.parse(gedcom_lines, ParsingContext())
+        parsed = gedcom_lines("\n".join(lines))
+        address, lines_consumed = parser.parse(parsed, ParsingContext())
 
         assert address.full == "123 Genealogy St, Springfield IL"
         assert address.line1 is None
@@ -114,8 +113,8 @@ class TestAddress:
             "2 CONT United States of America",
         ]
 
-        gedcom_lines = [GedcomLine.from_string(line) for line in lines]
-        address, lines_consumed = parser.parse(gedcom_lines, ParsingContext())
+        parsed = gedcom_lines("\n".join(lines))
+        address, lines_consumed = parser.parse(parsed, ParsingContext())
 
         expected_full = (
             "The Tall Building\n"
@@ -137,8 +136,8 @@ class TestAddress:
             "2 EMAIL",  # Empty email
         ]
 
-        gedcom_lines = [GedcomLine.from_string(line) for line in lines]
-        address, lines_consumed = parser.parse(gedcom_lines, ParsingContext())
+        parsed = gedcom_lines("\n".join(lines))
+        address, lines_consumed = parser.parse(parsed, ParsingContext())
 
         assert address.full == ""
         assert address.line1 == ""

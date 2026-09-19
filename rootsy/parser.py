@@ -3,7 +3,13 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from rootsy.models import GedcomStructure
+from rootsy.models import (
+    Family,
+    GedcomStructure,
+    Header,
+    Individual,
+    SourceRecord,
+)
 from rootsy.reader import GedcomReader
 from rootsy.registry import get_parser_for_path
 from rootsy.types import GedcomLine, ParsingContext
@@ -33,18 +39,19 @@ def parse_gedcom(file_path: Path | str) -> GedcomStructure:
                 first_line.tag,
                 _at_line(first_line),
             )
+            structure.add_skipped(first_line)
             continue
 
         result, _ = parser.parse(line_group, ParsingContext())
 
-        match first_line.tag:
-            case "HEAD":
+        match result:
+            case Header():
                 structure.header = result
-            case "INDI":
+            case Individual():
                 structure.add_individual(result)
-            case "FAM":
+            case Family():
                 structure.add_family(result)
-            case "SOUR":
+            case SourceRecord():
                 structure.add_source(result)
             case _:
                 logger.debug(

@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import attrs
 
@@ -8,6 +8,14 @@ from rootsy.models.address import Address
 from rootsy.models.date import GedcomDate
 
 SUPPORTED_VERSIONS = ("5.5.1", "7.0")
+
+
+# attrs hands a validator the instance, the attribute and the value; only the
+# value says anything here, and `Any` is what attrs types the other two as.
+def _validate_version(_: Any, __: Any, value: str) -> None:  # noqa: ANN401
+    """Reject a header declaring a GEDCOM version rootsy does not implement."""
+    if value not in SUPPORTED_VERSIONS:
+        raise UnsupportedGedcomVersionError(value, SUPPORTED_VERSIONS)
 
 
 @attrs.frozen(slots=True, kw_only=True)
@@ -40,9 +48,4 @@ class Header(GedcomRecord):
     language: str | None = None
     copyright: str | None = None
 
-    def validate_version(self, __: str, value: str) -> None:
-        """Validate if this is a supported version."""
-        if value not in SUPPORTED_VERSIONS:
-            raise UnsupportedGedcomVersionError(value, SUPPORTED_VERSIONS)
-
-    version: str = attrs.field(validator=validate_version)
+    version: str = attrs.field(validator=_validate_version)

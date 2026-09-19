@@ -5,7 +5,6 @@ import pytest
 from rootsy.adapters import ParsingContext
 from rootsy.models import HeaderSource
 from rootsy.parsers import HeaderParser
-from rootsy.types import GedcomLine
 from tests.helpers import gedcom_lines
 
 
@@ -25,7 +24,7 @@ class TestHeaderValidation:
             "1 GEDC",
             "2 VERS 6.0",  # Invalid version
         ]
-        gedcom_lines = [GedcomLine.from_string(line) for line in lines]
+        parsed = gedcom_lines("\n".join(lines))
         expected_error = (
             "Unsupported GEDCOM version '6.0'. Supported versions are 5.5.1 and 7.0"
         )
@@ -33,7 +32,7 @@ class TestHeaderValidation:
             ValueError,
             match=expected_error,
         ):
-            parser.parse(gedcom_lines, ParsingContext())
+            parser.parse(parsed, ParsingContext())
 
 
 class TestHeaderIntegration:
@@ -41,11 +40,7 @@ class TestHeaderIntegration:
 
     def test_real_v7_header(self, parser: HeaderParser, sample_header_70: str) -> None:
         """Test parsing a real 7.0 header file."""
-        lines = [
-            GedcomLine.from_string(line)
-            for line in sample_header_70.splitlines()
-            if line.strip()
-        ]
+        lines = gedcom_lines(sample_header_70)
 
         header, _ = parser.parse(lines, ParsingContext())
 
@@ -59,11 +54,7 @@ class TestHeaderIntegration:
         sample_header_551: str,
     ) -> None:
         """Test parsing a real 5.5.1 header file."""
-        lines = [
-            GedcomLine.from_string(line)
-            for line in sample_header_551.splitlines()
-            if line.strip()
-        ]
+        lines = gedcom_lines(sample_header_551)
 
         header, _ = parser.parse(lines, ParsingContext())
 
