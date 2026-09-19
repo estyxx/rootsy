@@ -40,6 +40,7 @@ rootsy export family.ged --out family.json      # write the file as JSON
 rootsy export family.ged --out family.json --indent 0   # one line, no indenting
 rootsy export family.ged --out safe.json --anonymise    # …with nobody named
 rootsy stats family.ged                         # what rootsy found in the file
+rootsy coverage family.ged                      # what rootsy has no field for yet
 ```
 
 `export` writes the same JSON as `to_dict()` below, indented by two spaces
@@ -59,10 +60,45 @@ family.ged
 Skipped: NOTE x3, REPO x1
 ```
 
+`coverage` goes the other way: it counts the lines each parser kept in
+`unparsed` because no field of the model holds them, grouped by record type and
+by the tags they sit under, plus the level-0 records no parser claimed. What
+comes out is the list of tags your files actually contain, in the order it is
+worth modelling them:
+
+```
+family.ged
+109 unparsed lines, 5 records skipped
+INDI: 98 unparsed lines in 24 of 24 records
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Tag path                  ┃ Count ┃                          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ INDI > _UID               │    24 │ ████████████████████████ │
+│ INDI > CHAN               │    16 │ ████████████████         │
+│ INDI > CHAN > DATE        │    16 │ ████████████████         │
+│ INDI > OBJE               │    12 │ ████████████             │
+│ INDI > OBJE > FILE        │    12 │ ████████████             │
+│ INDI > OBJE > FILE > FORM │    12 │ ████████████             │
+│ INDI > NOTE               │     6 │ ██████                   │
+└───────────────────────────┴───────┴──────────────────────────┘
+Skipped: level-0 records no parser claimed
+┏━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Tag  ┃ Count ┃                          ┃
+┡━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ NOTE │     3 │ ████████████████████████ │
+│ REPO │     1 │ ████████                 │
+│ SUBM │     1 │ ████████                 │
+└──────┴───────┴──────────────────────────┘
+```
+
+A path is built from the lines themselves, so a tag nested under another
+unparsed tag reads as `INDI > OBJE > FILE`. A parent the parser did read, such
+as the `DATE` above a `TIME`, is not in the list and so is not in the path.
+
 `--anonymise` (or `--anonymize`) replaces every personal detail before writing;
 `--dates keep|year|remove` says how much of each date to keep, the default
-being the year alone. Both commands report a file they cannot read on stderr
-and exit with a non-zero status.
+being the year alone. Every command reports a file it cannot read on stderr
+and exits with a non-zero status.
 
 ### Python
 
@@ -88,6 +124,25 @@ print(birth.date.to_date())           # None: only exact dates convert
 family = tree.families["@F3@"]
 print(family.husband, family.wife, family.children)
 print(family.marriage_event.date)     # "14 JUN 1919"
+```
+
+### Finding what is not modelled yet
+
+`coverage` is the same report as the command, as typed objects:
+
+```python
+from rootsy.coverage import coverage
+from rootsy.parser import parse_gedcom
+
+report = coverage(parse_gedcom("family.ged"))
+
+print(report.unparsed_lines)                  # 109
+for group in report.records:                  # INDI, FAM, HEAD, SOUR: worst first
+    print(group.tag, group.lines, group.records_with_unparsed, group.records)
+    for path in group.paths:                  # most frequent path first
+        print(path, path.count)               # "INDI > OBJE > FILE" 12
+
+print([(str(tag), tag.count) for tag in report.skipped])  # [("NOTE", 3), …]
 ```
 
 ### Anonymising a file
