@@ -38,6 +38,7 @@ Installing the package puts a `rootsy` command on your path.
 ```sh
 rootsy export family.ged --out family.json      # write the file as JSON
 rootsy export family.ged --out family.json --indent 0   # one line, no indenting
+rootsy export family.ged --out safe.json --anonymise    # …with nobody named
 rootsy stats family.ged                         # what rootsy found in the file
 ```
 
@@ -58,8 +59,10 @@ family.ged
 Skipped: NOTE x3, REPO x1
 ```
 
-Both commands report a file they cannot read on stderr and exit with a
-non-zero status.
+`--anonymise` (or `--anonymize`) replaces every personal detail before writing;
+`--dates keep|year|remove` says how much of each date to keep, the default
+being the year alone. Both commands report a file they cannot read on stderr
+and exit with a non-zero status.
 
 ### Python
 
@@ -86,6 +89,36 @@ family = tree.families["@F3@"]
 print(family.husband, family.wife, family.children)
 print(family.marriage_event.date)     # "14 JUN 1919"
 ```
+
+### Anonymising a file
+
+A family file is mostly information about living people, so it cannot be
+attached to a bug report or committed as a test fixture as it is. `anonymise`
+returns a copy that keeps the shape of the tree and loses the people in it:
+
+```python
+from rootsy.anonymise import AnonymisationPolicy, DatePolicy, anonymise
+from rootsy.parser import parse_gedcom
+
+safe = anonymise(parse_gedcom("family.ged"))
+
+person = safe.individuals["@I1@"]
+print(person.name)                    # "Given1 /Surname1/"
+print(person.birth.date.raw)          # "1890": the year, not "ABT 12 MAR 1890"
+print(person.birth.place)             # "Place1"
+print(safe.families["@F1@"].children) # ["@I3@"]: the tree still holds together
+
+# Keep less, or keep more
+anonymise(tree, AnonymisationPolicy(dates=DatePolicy.REMOVE))   # no dates at all
+anonymise(tree, AnonymisationPolicy(keep_places=True))          # real place names
+anonymise(tree, AnonymisationPolicy(keep_xrefs=True))           # original @I500123@
+```
+
+Names, places, notes, emails, addresses, source titles and the value of every
+tag rootsy does not model are replaced; two people who shared a surname still
+share one, and a place named twice is named twice. What says how the file was
+written - the exporting software, the GEDCOM version, the tags each record
+carries - is kept, because that is the reason to hold on to an anonymised file.
 
 Export to JSON:
 
@@ -161,6 +194,9 @@ flowchart LR
 | Qualified/partial dates (`ABT`, `BET … AND …`, `1890`) | yes | planned |
 | Source citations on events | kept as raw lines | planned |
 | Vendor extension tags (`_UID`, …) | kept on events | capture planned |
+
+Anonymisation covers every record and structure the parser produces, so a new
+field is anonymised as soon as it is parsed.
 
 ## Roadmap
 
