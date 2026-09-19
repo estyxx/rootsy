@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 import attrs
 
 from rootsy.adapters import GedcomParser
+from rootsy.lines import joined_text, non_continuation_lines, substructure_length
 from rootsy.models import Event, EventType, GedcomDate
 from rootsy.types import GedcomLine, ParsingContext
 
@@ -48,10 +49,8 @@ class EventParser(GedcomParser[Event]):
                     data["place"] = line.value
                     data["unparsed"].extend(span[1:])  # FORM, MAP, …
                 case "NOTE":
-                    data["notes"].append(note_text(span))
-                    data["unparsed"].extend(
-                        note for note in span[1:] if note.tag not in {"CONC", "CONT"}
-                    )
+                    data["notes"].append(joined_text(span))
+                    data["unparsed"].extend(non_continuation_lines(span))
                 case "SOUR":
                     data["citations"].extend(span)
                 case _:
@@ -60,25 +59,3 @@ class EventParser(GedcomParser[Event]):
             i += len(span)
 
         return Event(**data), i
-
-
-def substructure_length(lines: Sequence[GedcomLine], start: int) -> int:
-    """Count the line at `start` and every line nested under it."""
-    length = 1
-    while (
-        start + length < len(lines) and lines[start + length].level > lines[start].level
-    ):
-        length += 1
-    return length
-
-
-def note_text(lines: Sequence[GedcomLine]) -> str:
-    """Join a NOTE with its CONT (new line) and CONC (same line) continuations."""
-    text = lines[0].value
-    for line in lines[1:]:
-        match line.tag:
-            case "CONT":
-                text = f"{text}\n{line.value}"
-            case "CONC":
-                text = f"{text}{line.value}"
-    return text

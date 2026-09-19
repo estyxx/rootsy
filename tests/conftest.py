@@ -31,3 +31,9 @@ def fixtures_dir() -> Path:
 def sample_551_file(fixtures_dir: Path) -> Path:
     """Return the path to a small, anonymised 5.5.1 file."""
     return fixtures_dir / "sample_5.5.1.ged"
+
+
+@pytest.fixture(scope="session")
+def sample_70_file(test_data_dir: Path) -> Path:
+    """Return the path to a small 7.0 file with records rootsy cannot parse yet."""
+    return test_data_dir / "headers" / "header_7.0.ged"

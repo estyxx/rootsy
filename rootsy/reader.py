@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from rootsy.exceptions import GedcomFileNotFoundError, NotAGedcomFileError
 from rootsy.types import GedcomLine
 
 if TYPE_CHECKING:
@@ -16,11 +17,9 @@ class GedcomReader:
         """Initialize the reader with a file path."""
         self.file_path = Path(file_path)
         if not self.file_path.exists():
-            msg = f"GEDCOM file not found: {file_path}"
-            raise FileNotFoundError(msg)
+            raise GedcomFileNotFoundError(file_path)
         if not self.file_path.is_file():
-            msg = f"Path is not a file: {file_path}"
-            raise ValueError(msg)
+            raise NotAGedcomFileError(file_path)
 
     def line_groups(self) -> Iterator[list[GedcomLine]]:
         """Yield groups of related lines that form a complete record.
@@ -41,6 +40,6 @@ class GedcomReader:
     def _read_lines(self) -> Iterator[GedcomLine]:
         """Read and parse individual GEDCOM lines."""
         with self.file_path.open(encoding="utf-8-sig") as f:
-            for line in f:
-                if (line := line.strip()) and (parsed := GedcomLine.from_string(line)):
+            for number, line in enumerate(f, start=1):
+                if parsed := GedcomLine.from_string(line, line_number=number):
                     yield parsed

@@ -3,6 +3,7 @@ import pytest
 from rootsy.adapters import ParsingContext
 from rootsy.parsers import AddressParser
 from rootsy.types import GedcomLine
+from tests.helpers import gedcom_lines
 
 
 @pytest.fixture
@@ -144,3 +145,29 @@ class TestAddress:
         assert address.city == ""
         assert address.email == [""]
         assert lines_consumed == len(lines)
+
+    def test_unknown_tags_are_kept(self, parser: AddressParser) -> None:
+        """Nothing the spec defines here, or a vendor added, may be dropped."""
+        lines = gedcom_lines(
+            """
+            1 ADDR 123 Genealogy St.
+            2 CITY Springfield
+            2 NOTE Ring the second bell.
+            2 _MH_LOCAL Y
+            """,
+        )
+
+        address, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert address.city == "Springfield"
+        assert [line.tag for line in address.unparsed] == ["NOTE", "_MH_LOCAL"]
+        assert lines_consumed == len(lines)
+
+    def test_the_addr_line_itself_is_not_unparsed(self, parser: AddressParser) -> None:
+        address, _ = parser.parse(
+            gedcom_lines("1 ADDR 123 Genealogy St."),
+            ParsingContext(),
+        )
+
+        assert address.full == "123 Genealogy St."
+        assert address.unparsed == []

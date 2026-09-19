@@ -1,7 +1,7 @@
 import functools
 import importlib
 import inspect
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 import attrs
 
@@ -10,18 +10,33 @@ from rootsy.adapters import GedcomParser
 
 @attrs.frozen
 class ParserRegistry:
-    """Registry of available parsers by tag."""
+    """Registry of available parsers, by tag and by full tag path."""
 
     _parsers: dict[str, type[GedcomParser]] = attrs.field(factory=dict, init=False)
+    _parsers_by_path: dict[tuple[str, ...], type[GedcomParser]] = attrs.field(
+        factory=dict,
+        init=False,
+    )
 
     def register(self, parser_class: type[GedcomParser]) -> None:
-        """Register a parser class."""
-        self._parsers[parser_class.handles_tag] = parser_class
+        """Register a parser class, under its tag path when it claims one."""
+        if path := getattr(parser_class, "handles_path", None):
+            self._parsers_by_path[tuple(path)] = parser_class
+        else:
+            self._parsers[parser_class.handles_tag] = parser_class
 
     def get_parser_by_tag(self, tag: str) -> GedcomParser | None:
         """Get parser instance for a tag."""
         parser_class = self._parsers.get(tag)
         return parser_class() if parser_class else None
+
+    def get_parser_by_path(self, path: Sequence[str]) -> GedcomParser | None:
+        """Get parser instance for a tag path, falling back to its last tag."""
+        if not path:
+            return None
+        if parser_class := self._parsers_by_path.get(tuple(path)):
+            return parser_class()
+        return self.get_parser_by_tag(path[-1])
 
 
 def discover_parsers() -> Iterator[type[GedcomParser]]:
@@ -48,3 +63,8 @@ def get_registry() -> ParserRegistry:
 def get_parser_for_tag(tag: str) -> GedcomParser | None:
     """Get a parser for a specific tag."""
     return get_registry().get_parser_by_tag(tag)
+
+
+def get_parser_for_path(path: Sequence[str]) -> GedcomParser | None:
+    """Get a parser for a full tag path, such as `("HEAD", "SOUR")`."""
+    return get_registry().get_parser_by_path(path)

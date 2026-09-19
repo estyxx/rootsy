@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import attrs
 
@@ -19,11 +19,12 @@ class AddressParser(GedcomParser[Address]):
         lines: Sequence[GedcomLine],
         context: ParsingContext,
     ) -> tuple[Address, int]:
-        data = {
+        data: dict[str, Any] = {
             "full": lines[0].value,
             "phone": [],
             "email": [],
             "fax": [],
+            "unparsed": [],
         }
         lines_consumed = 0
         current_text: list[str] = []
@@ -40,6 +41,8 @@ class AddressParser(GedcomParser[Address]):
             lines_consumed += 1
 
             match line.tag:
+                case "ADDR":
+                    pass  # the structure's own line, read as `full` above
                 case "CONT":
                     current_text.append(line.value)
                 case "ADR1":
@@ -64,6 +67,9 @@ class AddressParser(GedcomParser[Address]):
                     data["fax"].append(line.value)
                 case "WWW":
                     data["web"] = line.value
+                # Anything else the spec allows here, plus vendor extensions.
+                case _:
+                    data["unparsed"].append(line)
 
             i += 1
 

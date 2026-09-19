@@ -23,6 +23,7 @@ class FamilyParser(GedcomParser[Family]):
         """Parse record from GEDCOM lines."""
         data: dict[str, Any] = {
             "children": [],
+            "unparsed": [],
         }
         lines_consumed = 0
         events = EventParser()
@@ -55,6 +56,9 @@ class FamilyParser(GedcomParser[Family]):
                     data[key] = event
                     lines_consumed += event_lines - 1
                     i += event_lines - 1
+                # Other events, SLGS, NOTE, SOUR, … and vendor extensions.
+                case _:
+                    data["unparsed"].append(line)
 
             i += 1
 
