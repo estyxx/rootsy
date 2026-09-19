@@ -1,11 +1,14 @@
 import functools
 import importlib
 import inspect
-from collections.abc import Iterator, Sequence
+from typing import TYPE_CHECKING, TypeGuard
 
 import attrs
 
 from rootsy.adapters import GedcomParser, GedcomRecord
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
 
 # Every parser reaches the registry as a parser of some record; which record
 # it builds is known to its caller, not to the registry.
@@ -43,12 +46,18 @@ class ParserRegistry:
         return self.get_parser_by_tag(path[-1])
 
 
+def _is_parser(obj: type[object]) -> TypeGuard[type[AnyParser]]:
+    """Whether a class `rootsy.parsers` exports is a parser at all."""
+    return hasattr(obj, "handles_tag")
+
+
 def discover_parsers() -> Iterator[type[AnyParser]]:
     """Discover all parser classes exported by rootsy.parsers."""
     module = importlib.import_module("rootsy.parsers")
 
     for _, obj in inspect.getmembers(module, inspect.isclass):
-        yield obj
+        if _is_parser(obj):
+            yield obj
 
 
 def _build_registry() -> ParserRegistry:

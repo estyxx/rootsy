@@ -163,10 +163,9 @@ def _parse_gregorian(text: str) -> _YearMonthDay:
     match text.upper().split():
         case [year] if (parsed_year := _parse_year(year)) is not None:
             return parsed_year, None, None
-        case [month, year] if (
-            (parsed_year := _parse_year(year)) is not None
-            and (parsed_month := _MONTHS.get(month)) is not None
-        ):
+        case [month, year] if (parsed_year := _parse_year(year)) is not None and (
+            parsed_month := _MONTHS.get(month)
+        ) is not None:
             return parsed_year, parsed_month, None
         case [day, month, year] if (
             day.isdigit()

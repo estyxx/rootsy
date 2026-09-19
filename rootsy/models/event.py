@@ -1,11 +1,13 @@
 from enum import Enum
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomRecord
-from rootsy.models.date import GedcomDate
-from rootsy.types import GedcomLine
+
+if TYPE_CHECKING:
+    from rootsy.models.date import GedcomDate
+    from rootsy.types import GedcomLine
 
 
 class EventType(Enum):

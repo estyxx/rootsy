@@ -1,12 +1,15 @@
 """The `rootsy` command line, run as a user runs it."""
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from typer.testing import CliRunner
 
 from rootsy.cli import app
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # A file with one person, one family and three level-0 records rootsy skips.
 SAMPLE = """0 HEAD

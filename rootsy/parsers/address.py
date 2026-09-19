@@ -1,11 +1,14 @@
-from collections.abc import Sequence
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomParser
 from rootsy.models import Address
-from rootsy.types import GedcomLine, ParsingContext
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from rootsy.types import GedcomLine, ParsingContext
 
 
 @attrs.frozen

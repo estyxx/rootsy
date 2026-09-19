@@ -3,12 +3,15 @@
 import datetime
 import json
 import logging
-from pathlib import Path
-
-import pytest
+from typing import TYPE_CHECKING
 
 from rootsy.models import EventType
 from rootsy.parser import parse_gedcom
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    import pytest
 
 
 class TestSample551:

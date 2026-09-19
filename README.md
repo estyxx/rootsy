@@ -21,7 +21,7 @@ the roadmap below before relying on it.
 
 ## Install
 
-Requires Python 3.13+.
+Requires Python 3.14+.
 
 ```sh
 uv add rootsy          # once published
