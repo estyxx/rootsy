@@ -19,7 +19,7 @@ def write_gedcom(tmp_path: Path, content: str) -> Path:
     return path
 
 
-def test_gedcom_parser_basic_parsing(tmp_path: str) -> None:
+def test_gedcom_parser_basic_parsing(tmp_path: Path) -> None:
     # Create a simple GEDCOM test file
     test_gedcom_content = """0 HEAD
 1 GEDC
@@ -56,7 +56,7 @@ def test_gedcom_parser_basic_parsing(tmp_path: str) -> None:
     assert birth_event.type == EventType.BIRTH
 
 
-def test_invalid_gedcom_version(tmp_path: str) -> None:
+def test_invalid_gedcom_version(tmp_path: Path) -> None:
     # Create a GEDCOM file with unsupported version
     invalid_gedcom_content = """0 HEAD
 1 GEDC
@@ -93,6 +93,30 @@ class TestUnknownRecords:
 
         assert sorted(structure.individuals) == ["@I1@"]
         assert structure.header is not None
+
+    def test_a_skipped_record_is_named_on_the_structure(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        path = write_gedcom(
+            tmp_path,
+            """0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @U1@ SUBM
+1 NAME John Doe
+0 @N1@ NOTE a note record
+0 TRLR
+""",
+        )
+
+        structure = parse_gedcom(path)
+
+        assert [(record.tag, record.line_number) for record in structure.skipped] == [
+            ("SUBM", 4),
+            ("NOTE", 6),
+        ]
+        assert structure.skipped[0].xref == "@U1@"
 
     def test_unknown_tag_is_logged_with_its_line_number(
         self,

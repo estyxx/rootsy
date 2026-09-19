@@ -1,6 +1,6 @@
 import abc
 from collections.abc import Sequence
-from typing import ClassVar, Protocol, Self
+from typing import ClassVar, Protocol, Self, cast
 
 import attrs
 
@@ -39,7 +39,9 @@ class GedcomRecord(abc.ABC):
 
         context = ParsingContext()
         result, _ = parser.parse(lines, context)
-        return result
+        # The registry holds the parser registered under this class's tag, and
+        # that parser builds this class; the type system cannot see the pairing.
+        return cast("Self", result)
 
 
 class GedcomParser[Result: GedcomRecord](Protocol):
@@ -54,6 +56,6 @@ class GedcomParser[Result: GedcomRecord](Protocol):
         self,
         lines: Sequence[GedcomLine],
         context: ParsingContext,
-    ) -> tuple[GedcomRecord, int]:
+    ) -> tuple[Result, int]:
         """Parse record from GEDCOM lines."""
         raise NotImplementedError

@@ -5,10 +5,20 @@ description = "A pythonic GEDCOM file parser"
 authors = [{ name = "Ester Beltrami", email = "beltrami.ester@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["attrs>=24.2.0"]
+dependencies = ["attrs>=24.2.0", "rich>=13.9.4", "typer>=0.15.1"]
+
+[project.scripts]
+rootsy = "rootsy.cli:app"
 
 [dependency-groups]
-dev = ["pytest>=8.3.4", "ruff>=0.8.2,<0.9"]
+dev = ["mypy>=1.14.1,<2", "pytest>=8.3.4", "ruff>=0.8.2,<0.9"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rootsy"]
 
 [tool.ruff]
 target-version = "py313"
@@ -46,3 +56,8 @@ ignore = [
     "PLR2004", # Magic value used in comparison
 
 ]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["rootsy", "tests"]
+strict = true

@@ -15,6 +15,7 @@ class TestSample551:
     def test_parses_end_to_end(self, sample_551_file: Path) -> None:
         structure = parse_gedcom(sample_551_file)
 
+        assert structure.header is not None
         assert structure.header.version == "5.5.1"
         assert structure.header.encoding == "UTF-8"
         assert structure.header.transmission_date is not None

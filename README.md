@@ -29,7 +29,39 @@ uv add rootsy          # once published
 uv sync
 ```
 
+Installing the package puts a `rootsy` command on your path.
+
 ## Usage
+
+### Command line
+
+```sh
+rootsy export family.ged --out family.json      # write the file as JSON
+rootsy export family.ged --out family.json --indent 0   # one line, no indenting
+rootsy stats family.ged                         # what rootsy found in the file
+```
+
+`export` writes the same JSON as `to_dict()` below, indented by two spaces
+unless `--indent` says otherwise. `stats` prints how many individuals, families
+and sources were read, and how many level-0 records rootsy has no parser for:
+
+```
+family.ged
+┏━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Records     ┃ Count ┃
+┡━━━━━━━━━━━━━╇━━━━━━━┩
+│ Individuals │   142 │
+│ Families    │    56 │
+│ Sources     │     3 │
+│ Skipped     │     4 │
+└─────────────┴───────┘
+Skipped: NOTE x3, REPO x1
+```
+
+Both commands report a file they cannot read on stderr and exit with a
+non-zero status.
+
+### Python
 
 ```python
 from rootsy.parser import parse_gedcom
@@ -81,9 +113,13 @@ The JSON mirrors the models:
       "id": "@F3@", "husband": "@I12@", "wife": "@I13@", "children": ["@I20@"],
       "marriage_event": { "type": "MARR", "date": "14 JUN 1919" }
     }
-  }
+  },
+  "skipped": [{ "tag": "REPO", "xref": "@R1@", "line_number": 412 }]
 }
 ```
+
+`skipped` names the level-0 records rootsy has no parser for yet, with the line
+each one started at, so nothing disappears without saying so.
 
 ## Design
 
@@ -129,12 +165,13 @@ flowchart LR
 ## Roadmap
 
 1. Never lose data: unknown tags captured on every model, unknown level-0
-   records skipped with a warning instead of crashing.
-2. GEDCOM 7.0 with version detection, validated against the official sample
+   records skipped with a warning instead of crashing. Done.
+2. `rootsy export` and `rootsy stats`, strict mypy and CI. Done.
+3. GEDCOM 7.0 with version detection, validated against the official sample
    files.
-3. `rootsy export file.ged --out file.json` command-line interface; PyPI
-   release.
-4. Strict mypy and CI.
+4. Parsers for the remaining level-0 records (`NOTE`, `SUBM`, `REPO`) and a
+   source citation model.
+5. PyPI release.
 
 ## Development
 
@@ -142,7 +179,10 @@ flowchart LR
 uv sync
 uv run pytest
 uv run ruff check . --fix && uv run ruff format .
+uv run mypy
 ```
+
+The same four checks run in CI on every push and pull request.
 
 Conventions and architecture notes for contributors (human or otherwise) are
 in `CLAUDE.md`.

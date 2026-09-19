@@ -2,7 +2,13 @@
 
 import json
 
-from rootsy.models import Family, GedcomStructure, Individual, SourceRecord
+from rootsy.models import (
+    Family,
+    GedcomStructure,
+    Individual,
+    SkippedRecord,
+    SourceRecord,
+)
 from rootsy.types import GedcomLine
 
 
@@ -22,6 +28,16 @@ class TestCollecting:
         structure.add_source(SourceRecord(title="Nameless"))
 
         assert structure.sources == {}
+
+    def test_a_skipped_record_keeps_where_it_came_from(self) -> None:
+        structure = GedcomStructure()
+        structure.add_skipped(
+            GedcomLine(level=0, tag="SUBM", value="", xref="@U1@", line_number=4),
+        )
+
+        assert structure.skipped == [
+            SkippedRecord(tag="SUBM", xref="@U1@", line_number=4),
+        ]
 
     def test_a_structure_starts_empty_and_without_a_header(self) -> None:
         structure = GedcomStructure()
