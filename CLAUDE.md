@@ -45,7 +45,8 @@ rootsy/
   registry.py      discovers parser classes in rootsy.parsers, maps tag/tag path → parser
   parser.py        parse_gedcom(path) → GedcomStructure  (the public entry point)
   anonymise.py     anonymise(structure) → a GedcomStructure that names nobody
-  cli.py           `rootsy export` and `rootsy stats`, the `rootsy` command
+  coverage.py      coverage(structure) → the tags left in `unparsed`, counted
+  cli.py           `rootsy export`, `stats` and `coverage`, the `rootsy` command
   models/          one attrs model per record/structure (individual, family, header,
                    address, event, multimedia, …) plus GedcomStructure
   parsers/         one parser per record/structure, same names as models/

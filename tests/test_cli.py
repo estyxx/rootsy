@@ -1,6 +1,7 @@
 """The `rootsy` command line, run as a user runs it."""
 
 import json
+import re
 from typing import TYPE_CHECKING
 
 import pytest
@@ -29,8 +30,38 @@ SAMPLE = """0 HEAD
 0 TRLR
 """
 
+# A file whose records carry tags rootsy reads but has no field for.
+UNPARSED_SAMPLE = """0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Ada /Lovelace/
+1 OBJE
+2 FILE ada.jpg
+1 CHAN
+0 @I2@ INDI
+1 NAME Grace /Hopper/
+1 OBJE
+2 FILE grace.jpg
+1 _UID 8F6A
+0 @F1@ FAM
+1 SLGS
+0 @N1@ NOTE a note record
+0 @N2@ NOTE another note
+0 @R1@ REPO
+0 TRLR
+"""
+
 # Wide enough that rich never wraps a line of output mid-word.
 WIDE_TERMINAL = {"COLUMNS": "200"}
+
+# A row of one of the tables `rootsy coverage` prints: a label, then its count.
+TABLE_ROW = re.compile(r"│ (?P<label>\S[^│]*?) +│ +(?P<count>\d+) │")
+
+
+def table_rows(output: str) -> list[tuple[str, int]]:
+    """Read back the rows of every table in a command's output."""
+    return [(row["label"], int(row["count"])) for row in TABLE_ROW.finditer(output)]
 
 
 @pytest.fixture
@@ -44,6 +75,14 @@ def gedcom_file(tmp_path: Path) -> Path:
     """Write the sample GEDCOM to a file and return its path."""
     path = tmp_path / "sample.ged"
     path.write_text(SAMPLE, encoding="utf-8")
+    return path
+
+
+@pytest.fixture
+def unparsed_file(tmp_path: Path) -> Path:
+    """Write the GEDCOM full of unmodelled tags and return its path."""
+    path = tmp_path / "unparsed.ged"
+    path.write_text(UNPARSED_SAMPLE, encoding="utf-8")
     return path
 
 
@@ -204,6 +243,100 @@ class TestStats:
         result = runner.invoke(app, ["stats", str(gedcom_file)])
 
         assert "Skipped: NOTE x1, REPO x1, SUBM x1" in result.stdout
+
+
+class TestCoverage:
+    def test_counts_the_unparsed_tags_of_each_record_type(
+        self,
+        runner: CliRunner,
+        unparsed_file: Path,
+    ) -> None:
+        result = runner.invoke(app, ["coverage", str(unparsed_file)])
+
+        assert result.exit_code == 0
+        rows = table_rows(result.stdout)
+        assert ("INDI > OBJE", 2) in rows
+        assert ("INDI > OBJE > FILE", 2) in rows
+        assert ("FAM > SLGS", 1) in rows
+        assert ("HEAD > GEDC", 1) in rows
+
+    def test_orders_the_tags_of_a_record_type_by_frequency(
+        self,
+        runner: CliRunner,
+        unparsed_file: Path,
+    ) -> None:
+        result = runner.invoke(app, ["coverage", str(unparsed_file)])
+
+        individuals = [
+            row for row in table_rows(result.stdout) if row[0].startswith("INDI")
+        ]
+        assert individuals == [
+            ("INDI > OBJE", 2),
+            ("INDI > OBJE > FILE", 2),
+            ("INDI > CHAN", 1),
+            ("INDI > _UID", 1),
+        ]
+
+    def test_says_how_many_records_of_a_type_held_something_unparsed(
+        self,
+        runner: CliRunner,
+        unparsed_file: Path,
+    ) -> None:
+        result = runner.invoke(app, ["coverage", str(unparsed_file)])
+
+        assert "INDI: 6 unparsed lines in 2 of 2 records" in result.stdout
+
+    def test_counts_the_level_0_records_no_parser_claimed(
+        self,
+        runner: CliRunner,
+        unparsed_file: Path,
+    ) -> None:
+        result = runner.invoke(app, ["coverage", str(unparsed_file)])
+
+        rows = table_rows(result.stdout)
+        assert ("NOTE", 2) in rows
+        assert ("REPO", 1) in rows
+
+    def test_reports_the_totals(
+        self,
+        runner: CliRunner,
+        unparsed_file: Path,
+    ) -> None:
+        result = runner.invoke(app, ["coverage", str(unparsed_file)])
+
+        assert "8 unparsed lines, 3 records skipped" in result.stdout
+
+    def test_draws_a_bar_per_tag(
+        self,
+        runner: CliRunner,
+        unparsed_file: Path,
+    ) -> None:
+        result = runner.invoke(app, ["coverage", str(unparsed_file)])
+
+        assert "█" in result.stdout
+
+    def test_a_file_with_nothing_unparsed_prints_no_table(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+    ) -> None:
+        path = tmp_path / "parsed.ged"
+        path.write_text("0 @I1@ INDI\n1 SEX F\n0 TRLR\n", encoding="utf-8")
+
+        result = runner.invoke(app, ["coverage", str(path)])
+
+        assert result.exit_code == 0
+        assert "0 unparsed lines, 0 records skipped" in result.stdout
+        assert table_rows(result.stdout) == []
+
+    def test_missing_file_exits_non_zero(
+        self,
+        runner: CliRunner,
+        tmp_path: Path,
+    ) -> None:
+        result = runner.invoke(app, ["coverage", str(tmp_path / "nowhere.ged")])
+
+        assert result.exit_code != 0
 
 
 class TestErrors:

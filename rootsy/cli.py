@@ -1,4 +1,4 @@
-"""The `rootsy` command line: export a GEDCOM file to JSON, or summarise one."""
+"""The `rootsy` command line: export a GEDCOM file to JSON, or report on one."""
 
 from __future__ import annotations
 
@@ -15,13 +15,18 @@ from rich.markup import escape
 from rich.table import Table
 
 from rootsy.anonymise import AnonymisationPolicy, DatePolicy, anonymise
+from rootsy.coverage import coverage
 from rootsy.exceptions import RootsyError
 from rootsy.parser import parse_gedcom
 
 if TYPE_CHECKING:
+    from rootsy.coverage import RecordCoverage, TagCount
     from rootsy.models import GedcomStructure
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
+
+# How wide the longest bar of a histogram is drawn, in characters.
+BAR_WIDTH = 24
 
 console = Console()
 error_console = Console(stderr=True)
@@ -135,9 +140,61 @@ def stats(file: GedcomFile) -> None:
         console.print(f"Skipped: {_skipped_by_tag(structure)}")
 
 
+@app.command("coverage")
+def coverage_report(file: GedcomFile) -> None:
+    """Print the tags of a GEDCOM file rootsy read but has no field for."""
+    report = coverage(_parse(file))
+
+    console.print(f"[bold]{escape(str(file))}[/bold]")
+    console.print(
+        f"{_counted(report.unparsed_lines, 'unparsed line')}, "
+        f"{_counted(report.skipped_records, 'record')} skipped",
+    )
+
+    for group in report.records:
+        console.print(_unparsed_histogram(group))
+
+    if report.skipped:
+        console.print(
+            _histogram(
+                "Skipped: level-0 records no parser claimed",
+                "Tag",
+                report.skipped,
+            ),
+        )
+
+
 def _counted(count: int, singular: str, plural: str | None = None) -> str:
     """Say `1 family` or `3 families`."""
     return f"{count} {singular if count == 1 else plural or f'{singular}s'}"
+
+
+def _unparsed_histogram(group: RecordCoverage) -> Table:
+    """Draw one record type's unparsed tag paths, most frequent first."""
+    title = (
+        f"{group.tag}: {_counted(group.lines, 'unparsed line')} in "
+        f"{group.records_with_unparsed} of {_counted(group.records, 'record')}"
+    )
+    return _histogram(title, "Tag path", group.paths)
+
+
+def _histogram(title: str, header: str, counts: list[TagCount]) -> Table:
+    """Draw tag counts as a table with a bar per row."""
+    table = Table(title=title, title_justify="left")
+    table.add_column(header)
+    table.add_column("Count", justify="right")
+    table.add_column("")  # the bars, scaled to the largest count in the table
+
+    largest = max(entry.count for entry in counts)
+    for entry in counts:
+        table.add_row(escape(str(entry)), str(entry.count), _bar(entry.count, largest))
+
+    return table
+
+
+def _bar(count: int, largest: int) -> str:
+    """Draw one bar of a histogram; the largest count fills `BAR_WIDTH`."""
+    return "\u2588" * max(1, round(BAR_WIDTH * count / largest))
 
 
 def _skipped_by_tag(structure: GedcomStructure) -> str:
