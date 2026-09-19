@@ -1,12 +1,15 @@
-from collections.abc import Sequence
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomParser
 from rootsy.lines import joined_text, non_continuation_lines, substructure_length
 from rootsy.models import SourceRecord
-from rootsy.types import GedcomLine, ParsingContext
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from rootsy.types import GedcomLine, ParsingContext
 
 # SOUR substructures held as text, by the field of `SourceRecord` they fill.
 TEXT_FIELDS = {

@@ -1,11 +1,14 @@
 """`GedcomReader`: the file on disk turned into lines and records."""
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from rootsy.exceptions import GedcomFileNotFoundError, NotAGedcomFileError, RootsyError
 from rootsy.reader import GedcomReader
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 SNIPPET = """0 HEAD
 1 GEDC

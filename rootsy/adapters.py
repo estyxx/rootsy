@@ -1,11 +1,13 @@
 import abc
-from collections.abc import Sequence
-from typing import ClassVar, Protocol, Self, cast
+from typing import TYPE_CHECKING, ClassVar, Protocol, Self, cast
 
 import attrs
 
 from rootsy.exceptions import ParserNotFoundError
 from rootsy.types import GedcomLine, ParsingContext
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 __all__ = ["GedcomParser", "GedcomRecord", "ParserNotFoundError", "ParsingContext"]
 
@@ -29,8 +31,9 @@ class GedcomRecord(abc.ABC):
 
         This provides a standard interface for creating any GEDCOM
         """
-        # Get the appropriate parser using the tag
-        from rootsy.registry import get_parser_for_path
+        # Imported here, not at the top: the registry imports every parser,
+        # and every parser imports the models that subclass this class.
+        from rootsy.registry import get_parser_for_path  # noqa: PLC0415
 
         parser = get_parser_for_path(cls.tag_path or (cls.tag,))
 

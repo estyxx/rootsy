@@ -1,5 +1,5 @@
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -10,6 +10,9 @@ from rootsy.models import (
     UnsupportedGedcomVersionError,
 )
 from rootsy.parser import parse_gedcom
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def write_gedcom(tmp_path: Path, content: str) -> Path:

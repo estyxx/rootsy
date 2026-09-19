@@ -4,14 +4,14 @@ version = "0.1.0"
 description = "A pythonic GEDCOM file parser"
 authors = [{ name = "Ester Beltrami", email = "beltrami.ester@gmail.com" }]
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = ["attrs>=24.2.0", "rich>=13.9.4", "typer>=0.15.1"]
+requires-python = ">=3.14"
+dependencies = ["attrs>=26.1.0", "rich>=15.0.0", "typer>=0.27.2"]
 
 [project.scripts]
 rootsy = "rootsy.cli:app"
 
 [dependency-groups]
-dev = ["mypy>=1.14.1,<2", "pytest>=8.3.4", "ruff>=0.8.2,<0.9"]
+dev = ["mypy>=2.3.1", "pytest>=9.1.1", "ruff>=0.16.8"]
 
 [build-system]
 requires = ["hatchling"]
@@ -21,8 +21,13 @@ build-backend = "hatchling.build"
 packages = ["rootsy"]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py314"
 line-length = 88
+
+[tool.ruff.format]
+# The README aligns the comments in its examples to read as a column; leave
+# prose files to their author.
+exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -30,6 +35,9 @@ fixable = ["ALL"]
 ignore = [
     # pragma: alphabetize
     "C901", # Function too complex
+    # The licence lives in LICENCE; repeating it atop all fifty files would say
+    # nothing the repository does not already say.
+    "CPY001", # Missing copyright notice at top of file
     "D1", # Missing docstring in {}
     "DTZ001", # `datetime.datetime()` called without a `tzinfo` argument
     "DTZ007", # Naive datetime constructed using `datetime.datetime.strptime()` without %z
@@ -58,6 +66,6 @@ ignore = [
 ]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 files = ["rootsy", "tests"]
 strict = true

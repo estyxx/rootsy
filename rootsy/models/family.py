@@ -1,9 +1,11 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomRecord
-from rootsy.models.event import Event
+
+if TYPE_CHECKING:
+    from rootsy.models.event import Event
 
 
 @attrs.frozen(slots=True, kw_only=True)

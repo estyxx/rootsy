@@ -1,11 +1,13 @@
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomRecord
 from rootsy.exceptions import UnsupportedGedcomVersionError
-from rootsy.models.address import Address
-from rootsy.models.date import GedcomDate
+
+if TYPE_CHECKING:
+    from rootsy.models.address import Address
+    from rootsy.models.date import GedcomDate
 
 SUPPORTED_VERSIONS = ("5.5.1", "7.0")
 

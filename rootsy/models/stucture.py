@@ -1,15 +1,17 @@
 import datetime
 import enum
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 
 import attrs
 
 from rootsy.models.date import GedcomDate
-from rootsy.models.family import Family
-from rootsy.models.header import Header
-from rootsy.models.individual import Individual
-from rootsy.models.source import SourceRecord
-from rootsy.types import GedcomLine
+
+if TYPE_CHECKING:
+    from rootsy.models.family import Family
+    from rootsy.models.header import Header
+    from rootsy.models.individual import Individual
+    from rootsy.models.source import SourceRecord
+    from rootsy.types import GedcomLine
 
 
 def _serialise(_: Any, __: Any, value: Any) -> Any:  # noqa: ANN401

@@ -1,12 +1,15 @@
-from collections.abc import Sequence
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomParser
 from rootsy.models import GedcomDate, Header, HeaderSource
 from rootsy.registry import get_parser_for_path
-from rootsy.types import GedcomLine, ParsingContext
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from rootsy.types import GedcomLine, ParsingContext
 
 
 @attrs.frozen

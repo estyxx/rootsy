@@ -1,13 +1,16 @@
 import re
-from collections.abc import Sequence
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import attrs
 
 from rootsy.adapters import GedcomParser
 from rootsy.models import Individual
 from rootsy.parsers.event import EventParser
-from rootsy.types import GedcomLine, ParsingContext
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from rootsy.types import GedcomLine, ParsingContext
 
 # Tags of the INDI substructures parsed as events.
 EVENT_TAGS = frozenset({"BIRT", "DEAT", "RESI"})

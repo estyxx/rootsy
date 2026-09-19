@@ -1,9 +1,9 @@
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.2
+    rev: v0.16.8
     hooks:
-      - id: ruff # Run `ruff` linter
+      - id: ruff-check # Run `ruff` linter
         name: Check 'ruff linter' passes
         stages: [pre-commit, pre-push]
         args: [--fix, --unsafe-fixes]
@@ -11,7 +11,7 @@ repos:
       - id: ruff-format # Run `ruff` formatter
         name: Check 'ruff format' passes
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer

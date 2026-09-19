@@ -19,7 +19,7 @@ Goals, in priority order:
 
 ## Stack and commands
 
-Python 3.13+, `attrs`, `uv` for environments, `ruff` for lint and format,
+Python 3.14+, `attrs`, `uv` for environments, `ruff` for lint and format,
 `pytest` for tests, `mypy` in strict mode, `typer` and `rich` for the CLI.
 
 ```sh
@@ -31,7 +31,7 @@ uv run mypy                    # type-check rootsy and tests, strictly
 ```
 
 Run all four before declaring a task finished. GitHub Actions runs the same
-four on every push and pull request.
+four on Python 3.14 for every push and pull request.
 
 ## Repository layout
 
