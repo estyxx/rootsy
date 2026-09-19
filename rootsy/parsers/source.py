@@ -5,6 +5,7 @@ import attrs
 from rootsy.adapters import GedcomParser
 from rootsy.lines import joined_text, non_continuation_lines, substructure_length
 from rootsy.models import SourceRecord
+from rootsy.parsers.vendor import RECORD_TAGS
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -36,7 +37,7 @@ class SourceRecordParser(GedcomParser[SourceRecord]):
         context: ParsingContext,
     ) -> tuple[SourceRecord, int]:
         """Parse a source record from its first line."""
-        data: dict[str, Any] = {"id": lines[0].xref, "unparsed": []}
+        data: dict[str, Any] = {"id": lines[0].xref, "vendor": {}, "unparsed": []}
         level = lines[0].level
         context.enter_level(lines[0])
 
@@ -48,6 +49,10 @@ class SourceRecordParser(GedcomParser[SourceRecord]):
             span = lines[i : i + substructure_length(lines, i)]
 
             match line.tag:
+                case "_UID":
+                    data["uid"] = line.value
+                case tag if tag in RECORD_TAGS:
+                    data["vendor"][tag] = line.value
                 case tag if (field := TEXT_FIELDS.get(tag)) is not None:
                     data[field] = joined_text(span) or None
                     # DATE and PLAC under PUBL, SOUR under TEXT, …

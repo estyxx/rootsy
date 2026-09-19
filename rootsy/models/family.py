@@ -26,3 +26,10 @@ class Family(GedcomRecord):
     children: list[str] = attrs.field(factory=list)
     marriage_event: Event | None = None
     divorce_event: Event | None = None
+    # EVEN: anything the family recorded that has no tag of its own, such as an
+    # engagement. Each one says what it was in `Event.custom_type`.
+    events: list[Event] = attrs.field(factory=list)
+    # _UID: the identity an exporter gives a family, stable across exports.
+    uid: str | None = None
+    # RIN and _UPD: an exporter's own record number and last-changed stamp.
+    vendor: dict[str, str] = attrs.field(factory=dict)

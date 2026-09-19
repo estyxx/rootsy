@@ -5,6 +5,7 @@ import attrs
 from rootsy.adapters import GedcomParser
 from rootsy.lines import joined_text, non_continuation_lines, substructure_length
 from rootsy.models import Event, EventType, GedcomDate
+from rootsy.parsers.address import AddressParser
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -17,7 +18,8 @@ class EventParser(GedcomParser[Event]):
     """Parser for any event, from its tag down to the end of its EVENT_DETAIL.
 
     The event type comes from the tag of the first line, so callers must only
-    hand over a structure whose tag `EventType` knows (`BIRT`, `MARR`, …).
+    hand over a structure whose tag `EventType` knows (`BIRT`, `MARR`, …). An
+    `EVEN` says what it was in a TYPE substructure instead.
     """
 
     handles_tag: ClassVar[str] = Event.tag
@@ -36,6 +38,7 @@ class EventParser(GedcomParser[Event]):
         }
         level = lines[0].level
         context.enter_level(lines[0])
+        addresses = AddressParser()
 
         i = 1
         while i < len(lines) and lines[i].level > level:
@@ -45,12 +48,23 @@ class EventParser(GedcomParser[Event]):
             span = lines[i : i + substructure_length(lines, i)]
 
             match line.tag:
+                case "TYPE":
+                    data["custom_type"] = line.value
                 case "DATE":
                     data["date"] = GedcomDate.from_string(line.value)
                     data["unparsed"].extend(span[1:])  # TIME, PHRASE, …
                 case "PLAC":
                     data["place"] = line.value
                     data["unparsed"].extend(span[1:])  # FORM, MAP, …
+                case "CAUS":
+                    data["cause"] = joined_text(span)
+                    data["unparsed"].extend(non_continuation_lines(span))
+                case "AGE":
+                    data["age"] = line.value
+                case "EMAIL":
+                    data["email"] = line.value
+                case "ADDR":
+                    data["address"], _ = addresses.parse(span, context)
                 case "NOTE":
                     data["notes"].append(joined_text(span))
                     data["unparsed"].extend(non_continuation_lines(span))

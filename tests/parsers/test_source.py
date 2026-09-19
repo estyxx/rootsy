@@ -83,7 +83,7 @@ class TestSourceRecord:
             2 EVEN BIRT
             3 DATE FROM 1980 TO 1990
             1 REPO @R1@
-            1 _UID 1234
+            1 _CUSTOM 1234
             """,
         )
 
@@ -97,8 +97,32 @@ class TestSourceRecord:
             "EVEN",
             "DATE",
             "REPO",
-            "_UID",
+            "_CUSTOM",
         ]
+        assert lines_consumed == len(lines)
+
+    def test_the_uid_is_read_and_the_other_vendor_tags_are_named(
+        self,
+        parser: SourceRecordParser,
+    ) -> None:
+        lines = gedcom_lines(
+            """
+            0 @S1@ SOUR
+            1 TITL Birth register
+            1 _UID 7C4A20
+            1 RIN 3
+            1 _UPD 12 JUN 2020 09:15:00 GMT-5
+            """,
+        )
+
+        source, lines_consumed = parser.parse(lines, ParsingContext())
+
+        assert source.uid == "7C4A20"
+        assert source.vendor == {
+            "RIN": "3",
+            "_UPD": "12 JUN 2020 09:15:00 GMT-5",
+        }
+        assert source.unparsed == []
         assert lines_consumed == len(lines)
 
     def test_stops_at_the_next_record(self, parser: SourceRecordParser) -> None:

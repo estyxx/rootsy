@@ -34,6 +34,12 @@ def sample_551_file(fixtures_dir: Path) -> Path:
 
 
 @pytest.fixture(scope="session")
+def myheritage_551_file(fixtures_dir: Path) -> Path:
+    """Return the path to an anonymised MyHeritage-shaped 5.5.1 export."""
+    return fixtures_dir / "myheritage_5.5.1.ged"
+
+
+@pytest.fixture(scope="session")
 def sample_70_file(test_data_dir: Path) -> Path:
     """Return the path to a small 7.0 file with records rootsy cannot parse yet."""
     return test_data_dir / "headers" / "header_7.0.ged"

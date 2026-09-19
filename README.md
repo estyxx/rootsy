@@ -14,10 +14,11 @@ nothing is stringly typed at the boundary.
 
 ## Status
 
-Early, and honest about it. Parses `HEAD`, `INDI` and `FAM` from GEDCOM 5.5.1
-exports well enough to drive a family-tree website, including events, dates and
-family links; the other level-0 records and GEDCOM 7.0 are still to come. See
-the roadmap below before relying on it.
+Early, and honest about it. Parses `HEAD`, `INDI`, `FAM` and `SOUR` from
+GEDCOM 5.5.1 exports well enough to drive a family-tree website, including
+events, dates, family links, photos and the vendor tags MyHeritage writes; the
+remaining level-0 records and GEDCOM 7.0 are still to come. See the roadmap
+below before relying on it.
 
 ## Install
 
@@ -68,19 +69,16 @@ worth modelling them:
 
 ```
 family.ged
-109 unparsed lines, 5 records skipped
-INDI: 98 unparsed lines in 24 of 24 records
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Tag path                  ┃ Count ┃                          ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ INDI > _UID               │    24 │ ████████████████████████ │
-│ INDI > CHAN               │    16 │ ████████████████         │
-│ INDI > CHAN > DATE        │    16 │ ████████████████         │
-│ INDI > OBJE               │    12 │ ████████████             │
-│ INDI > OBJE > FILE        │    12 │ ████████████             │
-│ INDI > OBJE > FILE > FORM │    12 │ ████████████             │
-│ INDI > NOTE               │     6 │ ██████                   │
-└───────────────────────────┴───────┴──────────────────────────┘
+61 unparsed lines, 5 records skipped
+INDI: 54 unparsed lines in 24 of 24 records
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Tag path           ┃ Count ┃                          ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ INDI > CHAN        │    16 │ ████████████████████████ │
+│ INDI > CHAN > DATE │    16 │ ████████████████████████ │
+│ INDI > ASSO        │    11 │ ████████████████         │
+│ INDI > ASSO > RELA │    11 │ ████████████████         │
+└────────────────────┴───────┴──────────────────────────┘
 Skipped: level-0 records no parser claimed
 ┏━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Tag  ┃ Count ┃                          ┃
@@ -92,7 +90,7 @@ Skipped: level-0 records no parser claimed
 ```
 
 A path is built from the lines themselves, so a tag nested under another
-unparsed tag reads as `INDI > OBJE > FILE`. A parent the parser did read, such
+unparsed tag reads as `INDI > CHAN > DATE`. A parent the parser did read, such
 as the `DATE` above a `TIME`, is not in the list and so is not in the path.
 
 `--anonymise` (or `--anonymize`) replaces every personal detail before writing;
@@ -115,6 +113,13 @@ person = tree.individuals["@I12@"]
 print(person.given_name, person.surname, person.sex)
 print(person.child_of_families)       # FAMC: families they are a child of
 print(person.spouse_in_families)      # FAMS: families they are a partner in
+print(person.occupations)             # OCCU, in the order the file writes them
+print(person.uid)                     # _UID: the same person in the next export
+
+photo = person.primary_photo          # the OBJE marked _PRIM, else the first
+print(photo.file, photo.title)        # "photos/giovanni.jpg" "In uniform"
+print(photo.date.raw, photo.place)    # when and where it was taken, if known
+print(photo.vendor)                   # {"_CUTOUT": "Y", …}: tags left as text
 
 birth = person.birth                  # None when the record has no BIRT
 print(birth.date.raw)                 # "ABT 1890", as written in the file
@@ -136,11 +141,11 @@ from rootsy.parser import parse_gedcom
 
 report = coverage(parse_gedcom("family.ged"))
 
-print(report.unparsed_lines)                  # 109
+print(report.unparsed_lines)                  # 61
 for group in report.records:                  # INDI, FAM, HEAD, SOUR: worst first
     print(group.tag, group.lines, group.records_with_unparsed, group.records)
     for path in group.paths:                  # most frequent path first
-        print(path, path.count)               # "INDI > OBJE > FILE" 12
+        print(path, path.count)               # "INDI > CHAN > DATE" 16
 
 print([(str(tag), tag.count) for tag in report.skipped])  # [("NOTE", 3), …]
 ```
@@ -169,9 +174,10 @@ anonymise(tree, AnonymisationPolicy(keep_places=True))          # real place nam
 anonymise(tree, AnonymisationPolicy(keep_xrefs=True))           # original @I500123@
 ```
 
-Names, places, notes, emails, addresses, source titles and the value of every
-tag rootsy does not model are replaced; two people who shared a surname still
-share one, and a place named twice is named twice. What says how the file was
+Names, places, notes, emails, addresses, occupations, photo paths and titles,
+stable ids, source titles and the value of every tag rootsy does not model are
+replaced; two people who shared a surname still share one, and a place named
+twice is named twice. What says how the file was
 written - the exporting software, the GEDCOM version, the tags each record
 carries - is kept, because that is the reason to hold on to an anonymised file.
 
@@ -193,6 +199,8 @@ The JSON mirrors the models:
     "@I12@": {
       "id": "@I12@", "given_name": "Ermes", "surname": "Rebecchi", "sex": "M",
       "events": [{ "type": "BIRT", "date": "ABT 1890", "place": "Verona" }],
+      "media": [{ "file": "photos/ermes.jpg", "primary": true }],
+      "occupations": ["Contadino"], "uid": "4F2C1A", "vendor": { "RIN": "12" },
       "child_of_families": [], "spouse_in_families": ["@F3@"]
     }
   },
@@ -240,15 +248,21 @@ flowchart LR
 | --- | --- | --- |
 | Header (`HEAD`, `SOUR`, `CHAR`, `LANG`, `DATE`) | yes | planned |
 | Individuals: names, sex, family links | yes | planned |
-| Individual events (`BIRT`, `DEAT`, `RESI`) | yes | planned |
+| Name pieces (`GIVN`, `SURN`, `NPFX`, `_MARNM`) | yes | planned |
+| Individual events (`BIRT`, `DEAT`, `BURI`, `RESI`) | yes | planned |
+| Individual attributes (`OCCU`, `NOTE`) | yes | planned |
 | Families: partners, children | yes | planned |
-| Family events (`MARR`, `DIV`) | yes | planned |
+| Family events (`MARR`, `DIV`, `EVEN` with `TYPE`) | yes | planned |
+| Event detail (`DATE`, `PLAC`, `CAUS`, `AGE`, `EMAIL`, `ADDR`) | yes | planned |
 | Addresses | yes | planned |
-| Multimedia (`OBJE`) | minimal | planned |
-| Sources, notes, repositories, submitters | no | planned |
+| Multimedia (`OBJE`) on a record | yes | planned |
+| Sources: title, author, publication, text | yes | planned |
+| Notes, repositories, submitters as level-0 records | no | planned |
 | Qualified/partial dates (`ABT`, `BET … AND …`, `1890`) | yes | planned |
-| Source citations on events | kept as raw lines | planned |
-| Vendor extension tags (`_UID`, …) | kept on events | capture planned |
+| Source citations on events and individuals | kept as raw lines | planned |
+| Stable ids (`_UID`) and exporter fields (`RIN`, `_UPD`) | yes | planned |
+| Photo vendor tags (`_PRIM`, `_DATE`, `_PLACE`, `_CUTOUT`, …) | yes | n/a |
+| Other vendor extension tags | kept on the record | kept on the record |
 
 Anonymisation covers every record and structure the parser produces, so a new
 field is anonymised as soon as it is parsed.
